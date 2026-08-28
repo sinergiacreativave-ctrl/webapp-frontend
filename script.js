@@ -23,7 +23,7 @@ async function cargarDatos() {
                 apellidos: val[3]?.trim(), 
                 grado: val[4]?.trim(), 
                 representante: val[5]?.trim(),
-                foto: val[6]?.trim() 
+                foto: val[8]?.trim() 
             };
         }).filter(e => e.idQR);
 
