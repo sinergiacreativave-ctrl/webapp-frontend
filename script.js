@@ -12,7 +12,7 @@ let bdAsistencia = [];
 async function cargarDatos() {
     try {
         // Estudiantes (Columna A=QR, B=Cédula, C=Nombres, D=Apellidos, E=Grado, F=Rep, I=Foto)
-        const resEst = await fetch(SHEET_CSV_ESTUDIANTES);
+       const resEst = await fetch(SHEET_CSV_ESTUDIANTES);
         const csvEst = await resEst.text();
         bdEstudiantes = csvEst.split(/\r?\n/).slice(1).map(fila => {
             const val = fila.split(',');
@@ -23,7 +23,7 @@ async function cargarDatos() {
                 apellidos: val[3]?.trim(), 
                 grado: val[4]?.trim(), 
                 representante: val[5]?.trim(),
-                foto: val[8]?.trim() 
+                foto: val[8]?.trim() // <--- Cambiado a val[8] para leer la Columna I
             };
         }).filter(e => e.idQR);
 
