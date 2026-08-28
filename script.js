@@ -11,7 +11,7 @@ let bdAsistencia = [];
 // --- 3. CARGAR DATOS DE GOOGLE SHEETS ---
 async function cargarDatos() {
     try {
-        // Estudiantes (Columna A=QR, B=Cédula, C=Nombres, D=Apellidos, E=Grado, F=Rep, G=Foto)
+        // Estudiantes (Columna A=QR, B=Cédula, C=Nombres, D=Apellidos, E=Grado, F=Rep, I=Foto)
         const resEst = await fetch(SHEET_CSV_ESTUDIANTES);
         const csvEst = await resEst.text();
         bdEstudiantes = csvEst.split(/\r?\n/).slice(1).map(fila => {
