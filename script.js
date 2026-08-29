@@ -1,4 +1,4 @@
-// --- 1. ENLACES DE GOOGLE SHEETS (Verifica que tus 3 enlaces CSV sigan aquí) ---
+// --- 1. ENLACES DE GOOGLE SHEETS ---
 const SHEET_CSV_ESTUDIANTES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=0&single=true&output=csv';
 const SHEET_CSV_NOTAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=2097122187&single=true&output=csv';
 const SHEET_CSV_ASISTENCIA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=1890009950&single=true&output=csv';
@@ -11,7 +11,6 @@ let bdAsistencia = [];
 // --- 3. CARGAR DATOS DE GOOGLE SHEETS ---
 async function cargarDatos() {
     try {
-        // Estudiantes 
         const resEst = await fetch(SHEET_CSV_ESTUDIANTES);
         const csvEst = await resEst.text();
         bdEstudiantes = csvEst.split(/\r?\n/).slice(1).map(fila => {
@@ -23,25 +22,22 @@ async function cargarDatos() {
                 apellidos: val[3]?.trim(),
                 grado: val[4]?.trim(),
                 representante: val[5]?.trim(),
-                foto: val[8]?.trim() // Lee la Columna I
+                foto: val[8]?.trim()
             };
         }).filter(e => e.idQR);
 
-        // Notas
         const resNotas = await fetch(SHEET_CSV_NOTAS);
         const csvNotas = await resNotas.text();
         bdNotas = csvNotas.split(/\r?\n/).slice(1).map(fila => {
             const val = fila.split(',');
-            return {
-                idQR: val[0]?.trim(),
-                lapso: val[1]?.trim(),
-                materia: val[2]?.trim(),
-                nota: val[3]?.trim(),
-                observacion: val[4]?.trim()
+            return { 
+                idQR: val[0]?.trim(), 
+                momento: val[1]?.trim(),     
+                materia: val[2]?.trim(),     
+                porcentaje: val[3]?.trim()   
             };
         }).filter(n => n.idQR);
 
-        // Asistencia
         const resAsist = await fetch(SHEET_CSV_ASISTENCIA);
         const csvAsist = await resAsist.text();
         bdAsistencia = csvAsist.split(/\r?\n/).slice(1).map(fila => {
@@ -65,9 +61,11 @@ cargarDatos();
 // --- 4. ESCÁNER QR Y DASHBOARD COMPLETO ---
 const btnEscanear = document.getElementById('btn-escanear');
 const resultadoDiv = document.getElementById('resultado');
+const textoInicio = document.getElementById('texto-inicio');
 
 btnEscanear.addEventListener('click', () => {
     btnEscanear.style.display = 'none';
+    if (textoInicio) textoInicio.style.display = 'none';
     resultadoDiv.innerHTML = "Cargando cámara...";
 
     const escaner = new Html5QrcodeScanner(
@@ -80,7 +78,8 @@ btnEscanear.addEventListener('click', () => {
 
     function alLeerQR(codigoEscaneado) {
         escaner.clear();
-        btnEscanear.style.display = 'none'; // Mantiene oculto el botón principal
+        btnEscanear.style.display = 'none'; 
+        if (textoInicio) textoInicio.style.display = 'none';
 
         const codigoLimpio = codigoEscaneado.trim();
         const estudiante = bdEstudiantes.find(est => est.idQR === codigoLimpio);
@@ -89,18 +88,16 @@ btnEscanear.addEventListener('click', () => {
             const susNotas = bdNotas.filter(n => n.idQR === codigoLimpio);
             const suAsistencia = bdAsistencia.filter(a => a.idQR === codigoLimpio);
 
-            // Tabla de notas
-            let htmlNotas = `<table class="tabla-notas"><tr><th>Materia</th><th>Nota</th><th>Lapso</th></tr>`;
+            let htmlNotas = `<table class="tabla-notas"><tr><th>Área / Materia</th><th>Porcentaje</th><th>Momento</th></tr>`;
             if (susNotas.length > 0) {
                 susNotas.forEach(n => { 
-                    htmlNotas += `<tr><td>${n.materia}</td><td>${n.nota}</td><td>${n.lapso}</td></tr>`; 
+                    htmlNotas += `<tr><td>${n.materia}</td><td>${n.porcentaje}</td><td>${n.momento}</td></tr>`; 
                 });
             } else {
-                htmlNotas += `<tr><td colspan="3">No hay notas registradas aún.</td></tr>`;
+                htmlNotas += `<tr><td colspan="3">No hay registros de porcentajes aún.</td></tr>`;
             }
             htmlNotas += `</table>`;
 
-            // Lista de asistencia
             let htmlAsistencia = `<ul class="lista-asistencia">`;
             if (suAsistencia.length > 0) {
                 suAsistencia.forEach(a => { 
@@ -111,16 +108,22 @@ btnEscanear.addEventListener('click', () => {
             }
             htmlAsistencia += `</ul>`;
 
-            // Ruta de la foto
             let imgSrc = 'https://via.placeholder.com/80?text=Sin+Foto';
             if (estudiante.foto && estudiante.foto !== '') {
                 const nombreArchivo = estudiante.foto.replace('fotos/', '');
                 imgSrc = `fotos/${nombreArchivo}`;
             }
 
-            // Renderizado centrado con Botón de Salida
+            // Renderizado centrado con Logo y Botón de Salida
             resultadoDiv.innerHTML = `
                 <div class="dashboard">
+                    <!-- NUEVO ENCABEZADO INSTITUCIONAL -->
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e2e8f0;">
+                        <img src="fotos/logo.png" alt="Logo Colegio" style="width: 55px; height: 55px; object-fit: contain;">
+                        <h1 style="margin: 0; font-size: 24px; color: #1e3a8a;">Portal Escolar</h1>
+                    </div>
+
+                    <!-- FOTO Y DATOS DEL ALUMNO -->
                     <div class="perfil-cabecera">
                         <img src="${imgSrc}" alt="Foto" class="foto-estudiante" onerror="this.src='https://via.placeholder.com/80?text=Sin+Foto'">
                         <div>
@@ -129,7 +132,7 @@ btnEscanear.addEventListener('click', () => {
                         </div>
                     </div>
                     
-                    <h3>📚 Boletín de Calificaciones</h3>
+                    <h3>📊 Rendimiento Académico</h3>
                     ${htmlNotas}
 
                     <h3>🏫 Registro de Ingreso</h3>
@@ -139,11 +142,11 @@ btnEscanear.addEventListener('click', () => {
                 </div>
             `;
 
-            // Evento para limpiar la pantalla y volver al inicio al hacer clic en Salir
             document.getElementById('btn-salir').addEventListener('click', () => {
                 resultadoDiv.innerHTML = '';
                 btnEscanear.style.display = 'block';
                 btnEscanear.innerText = 'Escanear Carnet';
+                if (textoInicio) textoInicio.style.display = 'block'; 
             });
 
         } else {
@@ -155,6 +158,7 @@ btnEscanear.addEventListener('click', () => {
                 resultadoDiv.innerHTML = '';
                 btnEscanear.style.display = 'block';
                 btnEscanear.innerText = 'Escanear Carnet';
+                if (textoInicio) textoInicio.style.display = 'block'; 
             });
         }
     }
