@@ -78,25 +78,71 @@ btnEscanear.addEventListener('click', () => {
 
     function alLeerQR(codigoEscaneado) {
         escaner.clear();
-        btnEscanear.style.display = 'none'; 
-        if (textoInicio) textoInicio.style.display = 'none';
+        btnEscanear.style.display = 'none';
+        if (textoInicio) textoInicio.style.display = 'none'; 
 
         const codigoLimpio = codigoEscaneado.trim();
         const estudiante = bdEstudiantes.find(est => est.idQR === codigoLimpio);
 
+        // Encabezado institucional reutilizable con logo y título
+        const headerInstitucional = `
+            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e2e8f0;">
+                <img src="fotos/logo.png" alt="Logo Colegio" style="width: 55px; height: 55px; object-fit: contain;">
+                <h1 style="margin: 0; font-size: 24px; color: #1e3a8a;">Portal Escolar</h1>
+            </div>
+        `;
+
         if (estudiante) {
+            // Se corrigió a 'n.idQR === codigoLimpio' para asegurar que muestre las notas de este alumno
             const susNotas = bdNotas.filter(n => n.idQR === codigoLimpio);
             const suAsistencia = bdAsistencia.filter(a => a.idQR === codigoLimpio);
 
-            let htmlNotas = `<table class="tabla-notas"><tr><th>Área / Materia</th><th>Porcentaje</th><th>Momento</th></tr>`;
-            if (susNotas.length > 0) {
-                susNotas.forEach(n => { 
-                    htmlNotas += `<tr><td>${n.materia}</td><td>${n.porcentaje}</td><td>${n.momento}</td></tr>`; 
-                });
-            } else {
-                htmlNotas += `<tr><td colspan="3">No hay registros de porcentajes aún.</td></tr>`;
-            }
+            const areasFijas = [
+                "Lengua",
+                "Matemática",
+                "Ciencias de la naturaleza y tecnología",
+                "Ciencias sociales",
+                "Educación estética",
+                "Educación física",
+                "Robótica",
+                "Inglés"
+            ];
+
+            let htmlNotas = `<table class="tabla-notas" style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                <tr style="background-color: #1e3a8a; color: white;">
+                    <th style="padding: 8px; text-align: left;">Área de Aprendizaje</th>
+                    <th style="padding: 8px; text-align: center;">Evaluado</th>
+                    <th style="padding: 8px; text-align: center;">Momento</th>
+                </tr>`;
+                
+            let momentoActual = susNotas.length > 0 ? susNotas[susNotas.length - 1].momento : "I Momento";
+
+            areasFijas.forEach(area => {
+                const registrosArea = susNotas.filter(n => n.materia.toLowerCase().trim() === area.toLowerCase().trim());
+                
+                let valorPorcentaje = "0%";
+                let momentoArea = momentoActual;
+
+                if (registrosArea.length > 0) {
+                    const ultimoRegistro = registrosArea[registrosArea.length - 1];
+                    valorPorcentaje = ultimoRegistro.porcentaje.includes('%') ? ultimoRegistro.porcentaje : `${ultimoRegistro.porcentaje}%`;
+                    momentoArea = ultimoRegistro.momento;
+                }
+
+                htmlNotas += `
+                <tr style="border-bottom: 1px solid #ddd;">
+                    <td style="padding: 8px; font-size: 13px;">${area}</td>
+                    <td style="padding: 8px; text-align: center; font-weight: bold; color: #1e3a8a;">${valorPorcentaje}</td>
+                    <td style="padding: 8px; text-align: center; font-size: 13px;">${momentoArea}</td>
+                </tr>`;
+            });
+
             htmlNotas += `</table>`;
+
+            htmlNotas += `
+            <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 12px; margin-bottom: 20px; border-radius: 6px; font-size: 13px; color: #52525b; line-height: 1.5;">
+                <strong>📌 Nota importante:</strong> El porcentaje mostrado representa únicamente el avance de las evaluaciones realizadas durante el momento, <strong>no es la calificación del estudiante</strong>. Si desea conocer el rendimiento académico de su representado, por favor comuníquese con la docente.
+            </div>`;
 
             let htmlAsistencia = `<ul class="lista-asistencia">`;
             if (suAsistencia.length > 0) {
@@ -114,16 +160,9 @@ btnEscanear.addEventListener('click', () => {
                 imgSrc = `fotos/${nombreArchivo}`;
             }
 
-            // Renderizado centrado con Logo y Botón de Salida
             resultadoDiv.innerHTML = `
                 <div class="dashboard">
-                    <!-- NUEVO ENCABEZADO INSTITUCIONAL -->
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e2e8f0;">
-                        <img src="fotos/logo.png" alt="Logo Colegio" style="width: 55px; height: 55px; object-fit: contain;">
-                        <h1 style="margin: 0; font-size: 24px; color: #1e3a8a;">Portal Escolar</h1>
-                    </div>
-
-                    <!-- FOTO Y DATOS DEL ALUMNO -->
+                    ${headerInstitucional}
                     <div class="perfil-cabecera">
                         <img src="${imgSrc}" alt="Foto" class="foto-estudiante" onerror="this.src='https://via.placeholder.com/80?text=Sin+Foto'">
                         <div>
@@ -132,7 +171,7 @@ btnEscanear.addEventListener('click', () => {
                         </div>
                     </div>
                     
-                    <h3>📊 Rendimiento Académico</h3>
+                    <h3 style="margin-top: 15px;">📊 Progreso Académico</h3>
                     ${htmlNotas}
 
                     <h3>🏫 Registro de Ingreso</h3>
@@ -146,19 +185,22 @@ btnEscanear.addEventListener('click', () => {
                 resultadoDiv.innerHTML = '';
                 btnEscanear.style.display = 'block';
                 btnEscanear.innerText = 'Escanear Carnet';
-                if (textoInicio) textoInicio.style.display = 'block'; 
+                if (textoInicio) textoInicio.style.display = 'block'; // Reactiva el texto al salir
             });
 
         } else {
             resultadoDiv.innerHTML = `
-                <h3 style="color: #b91c1c; text-align: center;">❌ Carnet Inválido</h3>
-                <button id="btn-salir" class="btn-salida">🚪 Salir</button>
+                <div class="dashboard">
+                    ${headerInstitucional}
+                    <h3 style="color: #b91c1c; text-align: center; margin: 20px 0;">❌ Carnet Inválido</h3>
+                    <button id="btn-salir" class="btn-salida">🚪 Salir</button>
+                </div>
             `;
             document.getElementById('btn-salir').addEventListener('click', () => {
                 resultadoDiv.innerHTML = '';
                 btnEscanear.style.display = 'block';
                 btnEscanear.innerText = 'Escanear Carnet';
-                if (textoInicio) textoInicio.style.display = 'block'; 
+                if (textoInicio) textoInicio.style.display = 'block'; // Reactiva el texto al salir
             });
         }
     }
