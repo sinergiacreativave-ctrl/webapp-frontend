@@ -84,16 +84,15 @@ btnEscanear.addEventListener('click', () => {
         const codigoLimpio = codigoEscaneado.trim();
         const estudiante = bdEstudiantes.find(est => est.idQR === codigoLimpio);
 
-        // Encabezado institucional reutilizable con logo y título
+        // Encabezado institucional fijo (fuera del cuadro de datos para que siempre se vea)
         const headerInstitucional = `
-            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e2e8f0;">
-                <img src="fotos/logo.png" alt="Logo Colegio" style="width: 55px; height: 55px; object-fit: contain;">
-                <h1 style="margin: 0; font-size: 24px; color: #1e3a8a;">Portal Escolar</h1>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 15px; background: white; padding: 10px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <img src="fotos/logo.png" alt="Logo Colegio" style="width: 45px; height: 45px; object-fit: contain;">
+                <h1 style="margin: 0; font-size: 20px; color: #1e3a8a;">Portal Escolar</h1>
             </div>
         `;
 
         if (estudiante) {
-            // Se corrigió a 'n.idQR === codigoLimpio' para asegurar que muestre las notas de este alumno
             const susNotas = bdNotas.filter(n => n.idQR === codigoLimpio);
             const suAsistencia = bdAsistencia.filter(a => a.idQR === codigoLimpio);
 
@@ -108,11 +107,11 @@ btnEscanear.addEventListener('click', () => {
                 "Inglés"
             ];
 
-            let htmlNotas = `<table class="tabla-notas" style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+            let htmlNotas = `<table class="tabla-notas" style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
                 <tr style="background-color: #1e3a8a; color: white;">
-                    <th style="padding: 8px; text-align: left;">Área de Aprendizaje</th>
-                    <th style="padding: 8px; text-align: center;">Evaluado</th>
-                    <th style="padding: 8px; text-align: center;">Momento</th>
+                    <th style="padding: 6px; text-align: left;">Área de Aprendizaje</th>
+                    <th style="padding: 6px; text-align: center;">Evaluado</th>
+                    <th style="padding: 6px; text-align: center;">Momento</th>
                 </tr>`;
                 
             let momentoActual = susNotas.length > 0 ? susNotas[susNotas.length - 1].momento : "I Momento";
@@ -131,20 +130,20 @@ btnEscanear.addEventListener('click', () => {
 
                 htmlNotas += `
                 <tr style="border-bottom: 1px solid #ddd;">
-                    <td style="padding: 8px; font-size: 13px;">${area}</td>
-                    <td style="padding: 8px; text-align: center; font-weight: bold; color: #1e3a8a;">${valorPorcentaje}</td>
-                    <td style="padding: 8px; text-align: center; font-size: 13px;">${momentoArea}</td>
+                    <td style="padding: 5px; font-size: 12px;">${area}</td>
+                    <td style="padding: 5px; text-align: center; font-weight: bold; color: #1e3a8a; font-size: 12px;">${valorPorcentaje}</td>
+                    <td style="padding: 5px; text-align: center; font-size: 12px;">${momentoArea}</td>
                 </tr>`;
             });
 
             htmlNotas += `</table>`;
 
             htmlNotas += `
-            <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 12px; margin-bottom: 20px; border-radius: 6px; font-size: 13px; color: #52525b; line-height: 1.5;">
-                <strong>📌 Nota importante:</strong> El porcentaje mostrado representa únicamente el avance de las evaluaciones realizadas durante el momento, <strong>no es la calificación del estudiante</strong>. Si desea conocer el rendimiento académico de su representado, por favor comuníquese con la docente.
+            <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 8px; margin-bottom: 15px; border-radius: 6px; font-size: 11px; color: #52525b; line-height: 1.4;">
+                <strong>📌 Nota importante:</strong> El porcentaje mostrado representa únicamente el avance de las evaluaciones realizadas durante el momento, <strong>no es la calificación del estudiante</strong>. Si desea conocer el rendimiento académico, comuníquese con la docente.
             </div>`;
 
-            let htmlAsistencia = `<ul class="lista-asistencia">`;
+            let htmlAsistencia = `<ul class="lista-asistencia" style="font-size: 12px; padding-left: 15px; margin-bottom: 10px;">`;
             if (suAsistencia.length > 0) {
                 suAsistencia.forEach(a => { 
                     htmlAsistencia += `<li>📅 ${a.fecha} - ⏰ ${a.hora} (${a.estado})</li>`; 
@@ -160,24 +159,25 @@ btnEscanear.addEventListener('click', () => {
                 imgSrc = `fotos/${nombreArchivo}`;
             }
 
+            // Inyectamos el header afuera del dashboard para que sea lo primero que se vea
             resultadoDiv.innerHTML = `
-                <div class="dashboard">
-                    ${headerInstitucional}
-                    <div class="perfil-cabecera">
-                        <img src="${imgSrc}" alt="Foto" class="foto-estudiante" onerror="this.src='https://via.placeholder.com/80?text=Sin+Foto'">
+                ${headerInstitucional}
+                <div class="dashboard" style="padding: 12px;">
+                    <div class="perfil-cabecera" style="margin-bottom: 10px;">
+                        <img src="${imgSrc}" alt="Foto" class="foto-estudiante" style="width: 80px; height: 80px;" onerror="this.src='https://via.placeholder.com/80?text=Sin+Foto'">
                         <div>
-                            <h2 style="margin: 5px 0 0 0; border: none; font-size: 18px;">${estudiante.nombres} ${estudiante.apellidos}</h2>
-                            <p style="margin: 3px 0 0 0; color: #475569; font-weight: bold;">${estudiante.grado}</p>
+                            <h2 style="margin: 2px 0 0 0; border: none; font-size: 16px;">${estudiante.nombres} ${estudiante.apellidos}</h2>
+                            <p style="margin: 2px 0 0 0; color: #475569; font-weight: bold; font-size: 13px;">${estudiante.grado}</p>
                         </div>
                     </div>
                     
-                    <h3 style="margin-top: 15px;">📊 Progreso Académico</h3>
+                    <h3 style="margin: 10px 0 5px 0; font-size: 14px;">📊 Progreso Académico</h3>
                     ${htmlNotas}
 
-                    <h3>🏫 Registro de Ingreso</h3>
+                    <h3 style="margin: 10px 0 5px 0; font-size: 14px;">🏫 Registro de Ingreso</h3>
                     ${htmlAsistencia}
 
-                    <button id="btn-salir" class="btn-salida">🚪 Salir / Cerrar Perfil</button>
+                    <button id="btn-salir" class="btn-salida" style="padding: 10px; font-size: 14px; margin-top: 10px;">🚪 Salir / Cerrar Perfil</button>
                 </div>
             `;
 
@@ -185,13 +185,13 @@ btnEscanear.addEventListener('click', () => {
                 resultadoDiv.innerHTML = '';
                 btnEscanear.style.display = 'block';
                 btnEscanear.innerText = 'Escanear Carnet';
-                if (textoInicio) textoInicio.style.display = 'block'; // Reactiva el texto al salir
+                if (textoInicio) textoInicio.style.display = 'block';
             });
 
         } else {
             resultadoDiv.innerHTML = `
+                ${headerInstitucional}
                 <div class="dashboard">
-                    ${headerInstitucional}
                     <h3 style="color: #b91c1c; text-align: center; margin: 20px 0;">❌ Carnet Inválido</h3>
                     <button id="btn-salir" class="btn-salida">🚪 Salir</button>
                 </div>
@@ -200,7 +200,7 @@ btnEscanear.addEventListener('click', () => {
                 resultadoDiv.innerHTML = '';
                 btnEscanear.style.display = 'block';
                 btnEscanear.innerText = 'Escanear Carnet';
-                if (textoInicio) textoInicio.style.display = 'block'; // Reactiva el texto al salir
+                if (textoInicio) textoInicio.style.display = 'block';
             });
         }
     }
