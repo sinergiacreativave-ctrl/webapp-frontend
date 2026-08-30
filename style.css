@@ -106,3 +106,91 @@ button {
     margin-top: 20px;
     font-weight: bold;
 }
+/* Botón de Invitaciones Escolares en el perfil */
+.btn-invitaciones {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    font-size: 14px;
+    border-radius: 8px;
+    width: 100%;
+    cursor: pointer;
+    font-weight: bold;
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Modal Emergente (Estilo Push Notification) */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 15px;
+    box-sizing: border-box;
+}
+
+.modal-contenido {
+    background: white;
+    border-radius: 14px;
+    max-width: 350px;
+    width: 100%;
+    position: relative;
+    padding: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    text-align: center;
+    animation: popIn 0.3s ease-out;
+}
+
+@keyframes popIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* Botón de cerrar (X) */
+.btn-cerrar-modal {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    z-index: 1001;
+}
+
+/* Carrusel de Imagenes */
+.carrusel-contenedor {
+    width: 100%;
+    height: 380px;
+    overflow: hidden;
+    border-radius: 8px;
+    position: relative;
+    margin-top: 10px;
+}
+
+.carrusel-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: none;
+}
+
+.carrusel-img.activa {
+    display: block;
+}
