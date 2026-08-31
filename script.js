@@ -133,8 +133,8 @@ function abrirModalPlanEvaluacion(gradoTexto) {
                 <iframe src="${archivoPDF}" style="width: 100%; height: 100%; border: none;"></iframe>
             </div>
 
-            <a href="${archivoPDF}" download="${archivoPDF}" target="_blank" class="btn-invitaciones" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; background-color: #059669;">
-                📥 Descargar Plan de Evaluación (PDF)
+            <a href="${archivoPDF}" download="${archivoPDF}" target="_blank" class="btn-plan" style="text-decoration: none;">
+                📥 Descargar
             </a>
         </div>
     `;
