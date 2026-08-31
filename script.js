@@ -37,12 +37,12 @@ async function cargarDatos() {
         bdNotas = csvNotas.split(/\r?\n/).slice(1).map(fila => {
             const val = fila.split(',');
             return { 
-                idQR: val[0]?.trim(), // CORREGIDO: Antes decía grado, lo que rompía el filtro de notas
+                grado: val[0]?.trim(), 
                 momento: val[1]?.trim(), 
                 materia: val[2]?.trim(), 
                 porcentaje: val[3]?.trim() 
             };
-        }).filter(n => n.idQR);
+        }).filter(n => n.grado);
 
         const resAsist = await fetch(SHEET_CSV_ASISTENCIA);
         const csvAsist = await resAsist.text();
@@ -101,7 +101,7 @@ function abrirModalInvitaciones() {
             imagenes[indexActual].classList.remove('activa');
             indexActual = (indexActual + 1) % imagenes.length;
             imagenes[indexActual].classList.add('activa');
-        }, 3500); 
+        }, 3500);
     }
 }
 
@@ -194,7 +194,7 @@ btnEscanear.addEventListener('click', () => {
             }
             htmlAsistencia += `</ul>`;
 
-            let imgSrc = 'https://via.placeholder.com/100?text=Sin+Foto';
+            let imgSrc = 'https://via.placeholder.com/80?text=Sin+Foto';
             if (estudiante.foto && estudiante.foto !== '') {
                 const nombreArchivo = estudiante.foto.replace('fotos/', '');
                 imgSrc = `fotos/${nombreArchivo}`;
@@ -202,33 +202,38 @@ btnEscanear.addEventListener('click', () => {
 
             resultadoDiv.innerHTML = `
                 ${headerInstitucional}
-                <div class="dashboard" style="padding: 15px; background: white; border-radius: 12px;">
-                    
-                    <!-- FOTO REDONDA Y CENTRADA -->
-                    <div style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 20px;">
-                        <img src="${imgSrc}" alt="Foto" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #1e3a8a; margin-bottom: 10px;" onerror="this.src='https://via.placeholder.com/100?text=Sin+Foto'">
-                        <h2 style="margin: 0; font-size: 18px; color: #1e3a8a;">${estudiante.nombres} ${estudiante.apellidos}</h2>
-                        <p style="margin: 2px 0 0 0; color: #475569; font-weight: bold; font-size: 14px;">${estudiante.grado}</p>
+                <div class="dashboard" style="padding: 12px;">
+                    <div class="perfil-cabecera" style="margin-bottom: 10px;">
+                        <img src="${imgSrc}" alt="Foto" class="foto-estudiante" style="width: 80px; height: 80px;" onerror="this.src='https://via.placeholder.com/80?text=Sin+Foto'">
+                        <div>
+                            <h2 style="margin: 2px 0 0 0; border: none; font-size: 16px;">${estudiante.nombres} ${estudiante.apellidos}</h2>
+                            <p style="margin: 2px 0 0 0; color: #475569; font-weight: bold; font-size: 13px;">${estudiante.grado}</p>
+                        </div>
                     </div>
                     
+                    <!-- Botón desplegable Menú -->
+                    <button id="btn-toggle-menu" class="btn-toggle-menu">≡ Menú</button>
+
+                    <div id="menu-opciones" class="menu-opciones">
+                        <button id="btn-ver-invitaciones" class="btn-invitaciones">📩 Invitaciones Escolares</button>
+                    </div>
+
                     <h3 style="margin: 10px 0 5px 0; font-size: 14px;">📊 Progreso Académico</h3>
                     ${htmlNotas}
 
                     <h3 style="margin: 10px 0 5px 0; font-size: 14px;">🏫 Registro de Ingreso</h3>
                     ${htmlAsistencia}
 
-                    <!-- MENÚ DE OPCIONES -->
-                    <div style="margin-top: 25px; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
-                        <h3 style="margin: 0 0 10px 0; font-size: 14px; text-align: center; color: #475569;">⚙️ Menú de Opciones</h3>
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <button id="btn-ver-invitaciones" style="background-color: #2563eb; color: white; border: none; padding: 12px; border-radius: 25px; font-weight: bold; font-size: 14px; cursor: pointer;">📩 Ver Eventos Escolares</button>
-                            <button id="btn-salir" style="background-color: #ef4444; color: white; border: none; padding: 12px; border-radius: 25px; font-weight: bold; font-size: 14px; cursor: pointer;">🚪 Salir / Cerrar Perfil</button>
-                        </div>
-                    </div>
+                    <button id="btn-salir" class="btn-salida" style="padding: 10px; font-size: 14px; margin-top: 10px;">🚪 Salir / Cerrar Perfil</button>
                 </div>
             `;
 
             // Eventos de botones
+            document.getElementById('btn-toggle-menu').addEventListener('click', () => {
+                const contenedorMenu = document.getElementById('menu-opciones');
+                contenedorMenu.classList.toggle('abierto');
+            });
+
             document.getElementById('btn-ver-invitaciones').addEventListener('click', abrirModalInvitaciones);
 
             document.getElementById('btn-salir').addEventListener('click', () => {
@@ -239,7 +244,6 @@ btnEscanear.addEventListener('click', () => {
                 if (textoInicio) textoInicio.style.display = 'block';
             });
 
-            // Disparar la notificación emergente automáticamente al abrir el perfil
             if (fotosInvitaciones.length > 0) {
                 setTimeout(abrirModalInvitaciones, 400);
             }
@@ -249,7 +253,7 @@ btnEscanear.addEventListener('click', () => {
                 ${headerInstitucional}
                 <div class="dashboard">
                     <h3 style="color: #b91c1c; text-align: center; margin: 20px 0;">❌ Carnet Inválido</h3>
-                    <button id="btn-salir" class="btn-salida" style="width: 100%; padding: 10px; background: #ef4444; color: white; border: none; border-radius: 8px;">🚪 Salir</button>
+                    <button id="btn-salir" class="btn-salida">🚪 Salir</button>
                 </div>
             `;
             document.getElementById('btn-salir').addEventListener('click', () => {
