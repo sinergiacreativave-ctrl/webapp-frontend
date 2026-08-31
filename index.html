@@ -9,13 +9,26 @@
 <body>
     <div class="dashboard" style="text-align: center;">
         <div id="texto-inicio">
-            <h2 style="color: #1e3a8a; margin-bottom: 10px;">Portal Escolar</h2>
+            <h2 style="color: #1e3a8a; margin-bottom: 5px;">Portal Escolar</h2>
             <p class="instrucciones-qr">Posiciona el carnet del estudiante frente a la cámara para escanear el código QR</p>
+            
             <button id="btn-escanear" class="btn-escanear">📷 Escanear Carnet</button>
+            <button id="btn-admin-login" class="btn-admin-acceso">🔒 Modo Docente de Guardia</button>
         </div>
         
         <div id="lector-qr" style="margin-top: 15px;"></div>
         <div id="resultado" style="margin-top: 15px;"></div>
+    </div>
+
+    <!-- Modal PIN Docente -->
+    <div id="modal-pin" class="modal-overlay">
+        <div class="modal-contenido" style="max-width: 300px;">
+            <button class="btn-cerrar-modal" id="btn-cerrar-pin">✕</button>
+            <h3 style="color: #1e3a8a; margin-top: 0;">Acceso Administrativo</h3>
+            <p style="font-size: 13px; color: #64748b;">Ingrese el PIN de Maestra de Guardia</p>
+            <input type="password" id="input-pin" maxlength="4" placeholder="••••" style="font-size: 20px; text-align: center; width: 80%; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 12px;">
+            <button id="btn-confirmar-pin" class="btn-invitaciones">Ingresar</button>
+        </div>
     </div>
 
     <!-- Librería indispensable para el lector QR -->
