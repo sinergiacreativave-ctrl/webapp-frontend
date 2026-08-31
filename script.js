@@ -3,7 +3,7 @@ const SHEET_CSV_ESTUDIANTES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1v
 const SHEET_CSV_NOTAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=2097122187&single=true&output=csv';
 const SHEET_CSV_ASISTENCIA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=1890009950&single=true&output=csv';
 
-// --- LISTA DE INVITACIONES / EVENTOS (Agrega o quita nombres de archivos) ---
+// --- LISTA DE INVITACIONES / EVENTOS ---
 const fotosInvitaciones = [
     'fotos/evento1.jpg',
     'fotos/evento2.jpg'
@@ -62,7 +62,7 @@ async function cargarDatos() {
 }
 cargarDatos();
 
-// --- 3. CONTROL DEL MODAL Y CARRUSEL ---
+// --- 3. CONTROL DEL MODAL Y CARRUSEL DE INVITACIONES ---
 function abrirModalInvitaciones() {
     if (fotosInvitaciones.length === 0) return;
 
@@ -111,7 +111,43 @@ function cerrarModalInvitaciones() {
     clearInterval(intervaloCarrusel);
 }
 
-// --- 4. ESCÁNER QR Y RENDERIZADO ---
+// --- 4. CONTROL DEL MODAL DEL PLAN DE EVALUACIÓN ---
+function abrirModalPlanEvaluacion(gradoTexto) {
+    // Extrae el número del grado (ej. "1er Grado" -> "1", "2do" -> "2")
+    const numGrado = gradoTexto.match(/\d+/)?.[0] || '1';
+    const archivoPDF = `Imomento${numGrado}.pdf`;
+
+    let modal = document.getElementById('modal-plan');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-plan';
+        modal.className = 'modal-overlay';
+        document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+        <div class="modal-contenido" style="max-width: 480px; width: 92%;">
+            <button class="btn-cerrar-modal" id="btn-cerrar-plan">✕</button>
+            <h3 style="margin: 5px 0 10px 0; color: #1e3a8a; font-size: 16px;">📋 Plan de Evaluación (${gradoTexto})</h3>
+            
+            <div style="height: 55vh; width: 100%; margin-bottom: 12px; border-radius: 8px; overflow: hidden; border: 1px solid #cbd5e1;">
+                <iframe src="${archivoPDF}" style="width: 100%; height: 100%; border: none;"></iframe>
+            </div>
+
+            <a href="${archivoPDF}" download="${archivoPDF}" target="_blank" class="btn-invitaciones" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; background-color: #059669;">
+                📥 Descargar Plan de Evaluación (PDF)
+            </a>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+
+    document.getElementById('btn-cerrar-plan').addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+}
+
+// --- 5. ESCÁNER QR Y RENDERIZADO ---
 const btnEscanear = document.getElementById('btn-escanear');
 const resultadoDiv = document.getElementById('resultado');
 const textoInicio = document.getElementById('texto-inicio');
@@ -216,6 +252,7 @@ btnEscanear.addEventListener('click', () => {
 
                     <div id="menu-opciones" class="menu-opciones">
                         <button id="btn-ver-invitaciones" class="btn-invitaciones">📩 Invitaciones Escolares</button>
+                        <button id="btn-plan-evaluacion" class="btn-plan">📋 Plan de Evaluación</button>
                     </div>
 
                     <h3 style="margin: 10px 0 5px 0; font-size: 14px;">📊 Progreso Académico</h3>
@@ -228,13 +265,17 @@ btnEscanear.addEventListener('click', () => {
                 </div>
             `;
 
-            // Eventos de botones
+            // Eventos de botones del menú
             document.getElementById('btn-toggle-menu').addEventListener('click', () => {
                 const contenedorMenu = document.getElementById('menu-opciones');
                 contenedorMenu.classList.toggle('abierto');
             });
 
             document.getElementById('btn-ver-invitaciones').addEventListener('click', abrirModalInvitaciones);
+            
+            document.getElementById('btn-plan-evaluacion').addEventListener('click', () => {
+                abrirModalPlanEvaluacion(estudiante.grado);
+            });
 
             document.getElementById('btn-salir').addEventListener('click', () => {
                 cerrarModalInvitaciones();
