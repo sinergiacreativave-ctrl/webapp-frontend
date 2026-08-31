@@ -181,3 +181,27 @@ body {
     font-weight: bold;
     cursor: pointer;
 }
+
+.btn-toggle-menu {
+    background-color: #4b5563;
+    color: white;
+    border: none;
+    padding: 10px;
+    width: 100%;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.menu-opciones {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.menu-opciones.abierto {
+    max-height: 100px;
+    margin-bottom: 10px;
+}
