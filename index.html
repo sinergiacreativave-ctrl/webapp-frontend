@@ -3,21 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>App Escolar</title>
+    <title>Portal Escolar</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="contenedor">
-    <p id="texto-inicio">Escanea el carnet del estudiante para ver su información.</p>
-    <button id="btn-escanear">Escanear Carnet</button>
-    
-    <div id="lector-qr"></div>
-    <div id="resultado"></div>
-</div>
-    </div>
-<!-- Librería del escáner QR (Enlace seguro y directo) -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <div class="dashboard" style="text-align: center;">
+        <div id="texto-inicio">
+            <h2 style="color: #1e3a8a; margin-bottom: 10px;">Portal Escolar</h2>
+            <p class="instrucciones-qr">Posiciona el carnet del estudiante frente a la cámara para escanear el código QR</p>
+            <button id="btn-escanear" class="btn-escanear">📷 Escanear Carnet</button>
+        </div>
         
-        <!-- Tu código principal -->
-        <script src="script.js"></script>
-    </body>
+        <div id="lector-qr" style="margin-top: 15px;"></div>
+        <div id="resultado" style="margin-top: 15px;"></div>
+    </div>
+
+    <!-- Librería indispensable para el lector QR -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="script.js"></script>
+</body>
+</html>
