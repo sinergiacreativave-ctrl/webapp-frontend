@@ -205,3 +205,23 @@ body {
     max-height: 100px;
     margin-bottom: 10px;
 }
+
+.btn-escanear {
+    background-color: #1e3a8a;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%;
+    margin-top: 15px;
+}
+
+.instrucciones-qr {
+    color: #4b5563;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 15px;
+}
