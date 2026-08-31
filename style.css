@@ -6,7 +6,7 @@ body {
     color: #1f2937;
 }
 
-/* Modal Emergente */
+/* Modales */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -74,13 +74,13 @@ body {
     opacity: 1;
 }
 
-/* Dashboard del Estudiante */
+/* Dashboard Generales */
 .dashboard {
     background: white;
     border-radius: 12px;
     padding: 15px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    max-width: 450px;
+    max-width: 480px;
     margin: 0 auto;
 }
 
@@ -102,13 +102,7 @@ body {
     margin-bottom: 10px;
 }
 
-.lista-asistencia {
-    font-size: 12px;
-    padding-left: 15px;
-    margin-bottom: 10px;
-}
-
-/* Pantalla principal y Botón Escanear QR */
+/* Botones Principales */
 .instrucciones-qr {
     text-align: center;
     color: #4b5563;
@@ -127,9 +121,21 @@ body {
     border-radius: 10px;
     cursor: pointer;
     display: block;
-    margin: 15px auto;
+    margin: 10px auto;
     width: 100%;
     box-shadow: 0 4px 6px rgba(30, 58, 138, 0.25);
+}
+
+.btn-admin-acceso {
+    background-color: #475569;
+    color: white;
+    border: none;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
 }
 
 /* Menú Desplegable */
@@ -161,9 +167,7 @@ body {
     display: flex;
 }
 
-/* Estilo idéntico para los botones de Invitaciones y Plan de Evaluación */
-.btn-invitaciones, 
-.btn-plan {
+.btn-invitaciones, .btn-plan {
     background-color: #2563eb;
     color: white;
     border: none;
@@ -189,4 +193,110 @@ body {
     border-radius: 8px;
     font-weight: bold;
     cursor: pointer;
+}
+
+/* Estilos del Calendario de Asistencia */
+.calendario-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    font-weight: bold;
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.calendario-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 15px;
+}
+
+.dia-box {
+    aspect-ratio: 1;
+    border-radius: 6px;
+    background-color: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: bold;
+    color: #475569;
+    position: relative;
+}
+
+.dia-box.presente {
+    background-color: #dcfce7;
+    border-color: #86efac;
+    color: #166534;
+}
+
+.dia-box.presente::after {
+    content: "✓";
+    font-size: 12px;
+    font-weight: 900;
+    color: #15803d;
+}
+
+.dia-box.invalido {
+    background-color: #f8fafc;
+    border-color: transparent;
+    color: #cbd5e1;
+}
+
+.dia-box.fin-semana {
+    background-color: #f1f5f9;
+    opacity: 0.5;
+}
+
+/* Panel Administrativo */
+.admin-grid-grados {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin: 12px 0;
+}
+
+.tarjeta-grado {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 8px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.tarjeta-grado h4 {
+    margin: 0 0 4px 0;
+    font-size: 12px;
+    color: #1e3a8a;
+}
+
+.tarjeta-grado .conteo {
+    font-size: 16px;
+    font-weight: bold;
+    color: #0f172a;
+}
+
+.alerta-escaneo {
+    padding: 8px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 13px;
+    margin-top: 10px;
+    display: none;
+}
+
+.alerta-escaneo.exito {
+    background-color: #dcfce7;
+    color: #15803d;
+    border: 1px solid #86efac;
+}
+
+.alerta-escaneo.repetido {
+    background-color: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
 }
