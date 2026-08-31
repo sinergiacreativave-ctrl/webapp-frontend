@@ -3,26 +3,32 @@ const SHEET_CSV_ESTUDIANTES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1v
 const SHEET_CSV_NOTAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=2097122187&single=true&output=csv';
 const SHEET_CSV_ASISTENCIA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=1890009950&single=true&output=csv';
 
-// --- 2. BASES DE DATOS EN MEMORIA ---
-let bdEstudiantes = [];
+// --- LISTA DE INVITACIONES / EVENTOS (Agrega o quita nombres de archivos) ---
+const fotosInvitaciones = [
+    'fotos/evento1.jpg',
+    'fotos/evento2.jpg'
+];
+
+let bdEstudiantes = []; 
 let bdNotas = [];
 let bdAsistencia = [];
+let intervaloCarrusel = null;
 
-// --- 3. CARGAR DATOS DE GOOGLE SHEETS ---
+// --- 2. CARGAR DATOS ---
 async function cargarDatos() {
     try {
         const resEst = await fetch(SHEET_CSV_ESTUDIANTES);
         const csvEst = await resEst.text();
         bdEstudiantes = csvEst.split(/\r?\n/).slice(1).map(fila => {
             const val = fila.split(',');
-            return {
-                idQR: val[0]?.trim(),
-                cedula: val[1]?.trim(),
-                nombres: val[2]?.trim(),
-                apellidos: val[3]?.trim(),
-                grado: val[4]?.trim(),
+            return { 
+                idQR: val[0]?.trim(), 
+                cedula: val[1]?.trim(), 
+                nombres: val[2]?.trim(), 
+                apellidos: val[3]?.trim(), 
+                grado: val[4]?.trim(), 
                 representante: val[5]?.trim(),
-                foto: val[8]?.trim()
+                foto: val[8]?.trim() 
             };
         }).filter(e => e.idQR);
 
@@ -31,10 +37,10 @@ async function cargarDatos() {
         bdNotas = csvNotas.split(/\r?\n/).slice(1).map(fila => {
             const val = fila.split(',');
             return { 
-                idQR: val[0]?.trim(), 
-                momento: val[1]?.trim(),     
-                materia: val[2]?.trim(),     
-                porcentaje: val[3]?.trim()   
+                idQR: val[0]?.trim(), // CORREGIDO: Antes decía grado, lo que rompía el filtro de notas
+                momento: val[1]?.trim(), 
+                materia: val[2]?.trim(), 
+                porcentaje: val[3]?.trim() 
             };
         }).filter(n => n.idQR);
 
@@ -42,23 +48,70 @@ async function cargarDatos() {
         const csvAsist = await resAsist.text();
         bdAsistencia = csvAsist.split(/\r?\n/).slice(1).map(fila => {
             const val = fila.split(',');
-            return {
-                fecha: val[0]?.trim(),
-                hora: val[1]?.trim(),
-                idQR: val[2]?.trim(),
-                estado: val[3]?.trim()
+            return { 
+                fecha: val[0]?.trim(), 
+                hora: val[1]?.trim(), 
+                idQR: val[2]?.trim(), 
+                estado: val[3]?.trim() 
             };
         }).filter(a => a.idQR);
 
-        console.log("¡Bases de datos listas!");
     } catch (error) {
-        console.error('Error cargando los datos:', error);
+        console.error('Error cargando datos:', error);
+    }
+}
+cargarDatos();
+
+// --- 3. CONTROL DEL MODAL Y CARRUSEL ---
+function abrirModalInvitaciones() {
+    if (fotosInvitaciones.length === 0) return;
+
+    let modal = document.getElementById('modal-invitaciones');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-invitaciones';
+        modal.className = 'modal-overlay';
+        document.body.appendChild(modal);
+    }
+
+    let htmlImagenes = fotosInvitaciones.map((src, i) => 
+        `<img src="${src}" class="carrusel-img ${i === 0 ? 'activa' : ''}" alt="Invitación ${i + 1}">`
+    ).join('');
+
+    modal.innerHTML = `
+        <div class="modal-contenido">
+            <button class="btn-cerrar-modal" id="btn-cerrar-modal">✕</button>
+            <h3 style="margin: 5px 0 0 0; color: #1e3a8a; font-size: 16px;">📩 Próximos Eventos</h3>
+            <div class="carrusel-contenedor">
+                ${htmlImagenes}
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+
+    document.getElementById('btn-cerrar-modal').addEventListener('click', cerrarModalInvitaciones);
+
+    if (fotosInvitaciones.length > 1) {
+        let indexActual = 0;
+        const imagenes = modal.querySelectorAll('.carrusel-img');
+        
+        clearInterval(intervaloCarrusel);
+        intervaloCarrusel = setInterval(() => {
+            imagenes[indexActual].classList.remove('activa');
+            indexActual = (indexActual + 1) % imagenes.length;
+            imagenes[indexActual].classList.add('activa');
+        }, 3500); 
     }
 }
 
-cargarDatos();
+function cerrarModalInvitaciones() {
+    const modal = document.getElementById('modal-invitaciones');
+    if (modal) modal.style.display = 'none';
+    clearInterval(intervaloCarrusel);
+}
 
-// --- 4. ESCÁNER QR Y DASHBOARD COMPLETO ---
+// --- 4. ESCÁNER QR Y RENDERIZADO ---
 const btnEscanear = document.getElementById('btn-escanear');
 const resultadoDiv = document.getElementById('resultado');
 const textoInicio = document.getElementById('texto-inicio');
@@ -68,23 +121,17 @@ btnEscanear.addEventListener('click', () => {
     if (textoInicio) textoInicio.style.display = 'none';
     resultadoDiv.innerHTML = "Cargando cámara...";
 
-    const escaner = new Html5QrcodeScanner(
-        "lector-qr", 
-        { fps: 10, qrbox: {width: 250, height: 250} },
-        false
-    );
-
+    const escaner = new Html5QrcodeScanner("lector-qr", { fps: 10, qrbox: {width: 250, height: 250} }, false);
     escaner.render(alLeerQR, () => {});
 
     function alLeerQR(codigoEscaneado) {
         escaner.clear();
         btnEscanear.style.display = 'none';
-        if (textoInicio) textoInicio.style.display = 'none'; 
+        if (textoInicio) textoInicio.style.display = 'none';
 
         const codigoLimpio = codigoEscaneado.trim();
         const estudiante = bdEstudiantes.find(est => est.idQR === codigoLimpio);
 
-        // Encabezado institucional fijo (fuera del cuadro de datos para que siempre se vea)
         const headerInstitucional = `
             <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 15px; background: white; padding: 10px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                 <img src="fotos/logo.png" alt="Logo Colegio" style="width: 45px; height: 45px; object-fit: contain;">
@@ -97,14 +144,9 @@ btnEscanear.addEventListener('click', () => {
             const suAsistencia = bdAsistencia.filter(a => a.idQR === codigoLimpio);
 
             const areasFijas = [
-                "Lengua",
-                "Matemática",
-                "Ciencias de la naturaleza y tecnología",
-                "Ciencias sociales",
-                "Educación estética",
-                "Educación física",
-                "Robótica",
-                "Inglés"
+                "Lengua", "Matemática", "Ciencias de la naturaleza y tecnología",
+                "Ciencias sociales", "Educación estética", "Educación física",
+                "Robótica", "Inglés"
             ];
 
             let htmlNotas = `<table class="tabla-notas" style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
@@ -118,7 +160,6 @@ btnEscanear.addEventListener('click', () => {
 
             areasFijas.forEach(area => {
                 const registrosArea = susNotas.filter(n => n.materia.toLowerCase().trim() === area.toLowerCase().trim());
-                
                 let valorPorcentaje = "0%";
                 let momentoArea = momentoActual;
 
@@ -153,22 +194,21 @@ btnEscanear.addEventListener('click', () => {
             }
             htmlAsistencia += `</ul>`;
 
-            let imgSrc = 'https://via.placeholder.com/80?text=Sin+Foto';
+            let imgSrc = 'https://via.placeholder.com/100?text=Sin+Foto';
             if (estudiante.foto && estudiante.foto !== '') {
                 const nombreArchivo = estudiante.foto.replace('fotos/', '');
                 imgSrc = `fotos/${nombreArchivo}`;
             }
 
-            // Inyectamos el header afuera del dashboard para que sea lo primero que se vea
             resultadoDiv.innerHTML = `
                 ${headerInstitucional}
-                <div class="dashboard" style="padding: 12px;">
-                    <div class="perfil-cabecera" style="margin-bottom: 10px;">
-                        <img src="${imgSrc}" alt="Foto" class="foto-estudiante" style="width: 80px; height: 80px;" onerror="this.src='https://via.placeholder.com/80?text=Sin+Foto'">
-                        <div>
-                            <h2 style="margin: 2px 0 0 0; border: none; font-size: 16px;">${estudiante.nombres} ${estudiante.apellidos}</h2>
-                            <p style="margin: 2px 0 0 0; color: #475569; font-weight: bold; font-size: 13px;">${estudiante.grado}</p>
-                        </div>
+                <div class="dashboard" style="padding: 15px; background: white; border-radius: 12px;">
+                    
+                    <!-- FOTO REDONDA Y CENTRADA -->
+                    <div style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 20px;">
+                        <img src="${imgSrc}" alt="Foto" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #1e3a8a; margin-bottom: 10px;" onerror="this.src='https://via.placeholder.com/100?text=Sin+Foto'">
+                        <h2 style="margin: 0; font-size: 18px; color: #1e3a8a;">${estudiante.nombres} ${estudiante.apellidos}</h2>
+                        <p style="margin: 2px 0 0 0; color: #475569; font-weight: bold; font-size: 14px;">${estudiante.grado}</p>
                     </div>
                     
                     <h3 style="margin: 10px 0 5px 0; font-size: 14px;">📊 Progreso Académico</h3>
@@ -177,23 +217,39 @@ btnEscanear.addEventListener('click', () => {
                     <h3 style="margin: 10px 0 5px 0; font-size: 14px;">🏫 Registro de Ingreso</h3>
                     ${htmlAsistencia}
 
-                    <button id="btn-salir" class="btn-salida" style="padding: 10px; font-size: 14px; margin-top: 10px;">🚪 Salir / Cerrar Perfil</button>
+                    <!-- MENÚ DE OPCIONES -->
+                    <div style="margin-top: 25px; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
+                        <h3 style="margin: 0 0 10px 0; font-size: 14px; text-align: center; color: #475569;">⚙️ Menú de Opciones</h3>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <button id="btn-ver-invitaciones" style="background-color: #2563eb; color: white; border: none; padding: 12px; border-radius: 25px; font-weight: bold; font-size: 14px; cursor: pointer;">📩 Ver Eventos Escolares</button>
+                            <button id="btn-salir" style="background-color: #ef4444; color: white; border: none; padding: 12px; border-radius: 25px; font-weight: bold; font-size: 14px; cursor: pointer;">🚪 Salir / Cerrar Perfil</button>
+                        </div>
+                    </div>
                 </div>
             `;
 
+            // Eventos de botones
+            document.getElementById('btn-ver-invitaciones').addEventListener('click', abrirModalInvitaciones);
+
             document.getElementById('btn-salir').addEventListener('click', () => {
+                cerrarModalInvitaciones();
                 resultadoDiv.innerHTML = '';
                 btnEscanear.style.display = 'block';
                 btnEscanear.innerText = 'Escanear Carnet';
                 if (textoInicio) textoInicio.style.display = 'block';
             });
 
+            // Disparar la notificación emergente automáticamente al abrir el perfil
+            if (fotosInvitaciones.length > 0) {
+                setTimeout(abrirModalInvitaciones, 400);
+            }
+
         } else {
             resultadoDiv.innerHTML = `
                 ${headerInstitucional}
                 <div class="dashboard">
                     <h3 style="color: #b91c1c; text-align: center; margin: 20px 0;">❌ Carnet Inválido</h3>
-                    <button id="btn-salir" class="btn-salida">🚪 Salir</button>
+                    <button id="btn-salir" class="btn-salida" style="width: 100%; padding: 10px; background: #ef4444; color: white; border: none; border-radius: 8px;">🚪 Salir</button>
                 </div>
             `;
             document.getElementById('btn-salir').addEventListener('click', () => {
