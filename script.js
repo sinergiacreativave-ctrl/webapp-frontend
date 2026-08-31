@@ -326,17 +326,13 @@ async function alEscanearModoGuardia(codigoEscaneado) {
         elContador.innerText = `${conteos[estudiante.grado]} / 25`;
     }
 
+    // Envío por parámetros URL para evitar el bloqueo de cuerpo por CORS
     try {
-        await fetch(URL_APPS_SCRIPT, {
+        const urlConParametros = `${URL_APPS_SCRIPT}?fecha=${encodeURIComponent(fechaStr)}&hora=${encodeURIComponent(horaStr)}&idQR=${encodeURIComponent(codigoLimpio)}&estado=Presente`;
+        
+        await fetch(urlConParametros, {
             method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                fecha: fechaStr,
-                hora: horaStr,
-                idQR: codigoLimpio,
-                estado: 'Presente'
-            })
+            mode: 'no-cors'
         });
     } catch (e) {
         console.error("Error guardando en la hoja de cálculo:", e);
