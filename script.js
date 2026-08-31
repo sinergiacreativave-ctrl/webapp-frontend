@@ -113,7 +113,6 @@ function cerrarModalInvitaciones() {
 
 // --- 4. CONTROL DEL MODAL DEL PLAN DE EVALUACIÓN ---
 function abrirModalPlanEvaluacion(gradoTexto) {
-    // Extrae el número del grado (ej. "1er Grado" -> "1", "2do" -> "2")
     const numGrado = gradoTexto.match(/\d+/)?.[0] || '1';
     const archivoPDF = `Imomento${numGrado}.pdf`;
 
