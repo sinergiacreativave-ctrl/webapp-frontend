@@ -328,8 +328,9 @@ async function alEscanearModoGuardia(codigoEscaneado) {
 
     // Envío por parámetros URL para evitar el bloqueo de cuerpo por CORS
     try {
-        const urlConParametros = `${URL_APPS_SCRIPT}?fecha=${encodeURIComponent(fechaStr)}&hora=${encodeURIComponent(horaStr)}&idQR=${encodeURIComponent(codigoLimpio)}&estado=Presente`;
-        
+        const nombreCompleto = `${estudiante.nombres} ${estudiante.apellidos}`;
+        const urlConParametros = `${URL_APPS_SCRIPT}?fecha=${encodeURIComponent(fechaStr)}&hora=${encodeURIComponent(horaStr)}&idQR=${encodeURIComponent(codigoLimpio)}&estudiante=${encodeURIComponent(nombreCompleto)}&estado=Presente`;
+
         await fetch(urlConParametros, {
             method: 'POST',
             mode: 'no-cors'
