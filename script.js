@@ -201,6 +201,75 @@ function generarCalendarioAsistencia(registrosAlumno) {
 }
 
 // --- 5. PERFIL ADMINISTRATIVO (DOCENTE DE GUARDIA) ---
+
+// --- FUNCIONES DE NORMALIZACIÓN DE GRADOS Y GRUPOS ---
+function obtenerFechaNormalizada(fechaStr) {
+    if (!fechaStr) return "";
+    // Convierte fechas "YYYY-MM-DD" o "DD/MM/YYYY" a "D/M/YYYY" sin ceros a la izquierda
+    if (fechaStr.includes("-")) {
+        const [y, m, d] = fechaStr.split("-");
+        return `${parseInt(d, 10)}/${parseInt(m, 10)}/${y}`;
+    }
+    if (fechaStr.includes("/")) {
+        const [d, m, y] = fechaStr.split("/");
+        return `${parseInt(d, 10)}/${parseInt(m, 10)}/${y}`;
+    }
+    return fechaStr;
+}
+
+function normalizarGradoBase(gradoRaw) {
+    if (!gradoRaw) return "";
+    const str = String(gradoRaw).trim().toUpperCase();
+
+    // Preescolar (Se evalúan romanos antes para no confundir III con I)
+    if (str.includes("III") || str.includes("3ER GRUPO")) return "III Grupo";
+    if (str.includes("II") || str.includes("2DO GRUPO")) return "II Grupo";
+    if (str.includes("I GRUPO") || str.includes("1ER GRUPO")) return "I Grupo";
+
+    // Primaria
+    if (str.includes("1")) return "1er Grado A";
+    if (str.includes("2")) return "2do Grado A";
+    if (str.includes("3")) return "3er Grado A";
+    if (str.includes("4")) return "4to Grado A";
+    if (str.includes("5")) return "5to Grado A";
+    if (str.includes("6")) return "6to Grado A";
+
+    return gradoRaw.trim();
+}
+
+function calcularAsistenciaHoyPorGrado() {
+    const hoy = new Date();
+    const fechaHoyNorm = `${hoy.getDate()}/${hoy.getMonth() + 1}/${hoy.getFullYear()}`;
+    
+    // Objeto con la lista exacta de las 9 opciones
+    const conteos = { 
+        "I Grupo": 0, 
+        "II Grupo": 0, 
+        "III Grupo": 0,
+        "1er Grado A": 0, 
+        "2do Grado A": 0, 
+        "3er Grado A": 0, 
+        "4to Grado A": 0, 
+        "5to Grado A": 0, 
+        "6to Grado A": 0 
+    };
+
+    bdAsistencia.forEach(reg => {
+        const fechaRegNorm = obtenerFechaNormalizada(reg.fecha);
+        if (fechaRegNorm === fechaHoyNorm) {
+            const est = bdEstudiantes.find(e => e.idQR === reg.idQR);
+            if (est) {
+                const gradoBase = normalizarGradoBase(est.grado);
+                if (conteos[gradoBase] !== undefined) {
+                    conteos[gradoBase]++;
+                }
+            }
+        }
+    });
+
+    return conteos;
+}
+
 const modalPin = document.getElementById('modal-pin');
 const btnAdminLogin = document.getElementById('btn-admin-login');
 const btnCerrarPin = document.getElementById('btn-cerrar-pin');
@@ -226,22 +295,6 @@ function procesarAccesoAdmin() {
         alert("PIN Incorrecto");
         inputPin.value = '';
     }
-}
-
-function calcularAsistenciaHoyPorGrado() {
-    const hoyStr = new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const conteos = { "1er Grado": 0, "2do Grado": 0, "3er Grado": 0, "4to Grado": 0, "5to Grado": 0, "6to Grado": 0 };
-
-    bdAsistencia.forEach(reg => {
-        if (reg.fecha === hoyStr || reg.fecha.startsWith(hoyStr.substring(0, 5))) {
-            const est = bdEstudiantes.find(e => e.idQR === reg.idQR);
-            if (est && conteos[est.grado] !== undefined) {
-                conteos[est.grado]++;
-            }
-        }
-    });
-
-    return conteos;
 }
 
 function iniciarPanelAdmin() {
@@ -283,6 +336,7 @@ function iniciarPanelAdmin() {
     escanerContinuo.render(alEscanearModoGuardia, () => {});
 }
 
+// --- ESCANEO Y ACTUALIZACIÓN EN VIVO ---
 async function alEscanearModoGuardia(codigoEscaneado) {
     if (procesandoEscaneo) return;
     procesandoEscaneo = true;
@@ -300,10 +354,10 @@ async function alEscanearModoGuardia(codigoEscaneado) {
     }
 
     const hoy = new Date();
-    const fechaStr = hoy.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const fechaStrNorm = `${hoy.getDate()}/${hoy.getMonth() + 1}/${hoy.getFullYear()}`;
     const horaStr = hoy.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-    const yaRegistrado = bdAsistencia.some(a => a.idQR === codigoLimpio && (a.fecha === fechaStr || a.fecha.startsWith(fechaStr.substring(0, 5))));
+    const yaRegistrado = bdAsistencia.some(a => a.idQR === codigoLimpio && obtenerFechaNormalizada(a.fecha) === fechaStrNorm);
 
     if (yaRegistrado) {
         alertaDiv.className = "alerta-escaneo repetido";
@@ -317,23 +371,31 @@ async function alEscanearModoGuardia(codigoEscaneado) {
     alertaDiv.innerText = `✅ ¡Asistencia Registrada! ${estudiante.nombres} (${estudiante.grado})`;
     alertaDiv.style.display = "block";
 
-    bdAsistencia.push({ fecha: fechaStr, hora: horaStr, idQR: codigoLimpio, estado: 'Presente' });
+    bdAsistencia.push({ fecha: fechaStrNorm, hora: horaStr, idQR: codigoLimpio, estado: 'Presente' });
 
-    const idContador = `cnt-${estudiante.grado.replace(/\s+/g, '')}`;
+    // Actualiza la tarjeta correspondiente al instante
+    const gradoBase = normalizarGradoBase(estudiante.grado);
+    const idContador = `cnt-${gradoBase.replace(/\s+/g, '')}`;
     const elContador = document.getElementById(idContador);
     if (elContador) {
         const conteos = calcularAsistenciaHoyPorGrado();
-        elContador.innerText = `${conteos[estudiante.grado]} / 25`;
+        elContador.innerText = `${conteos[gradoBase] || 0} / 25`;
     }
 
-    // Envío por parámetros URL para evitar el bloqueo de cuerpo por CORS
     try {
         const nombreCompleto = `${estudiante.nombres} ${estudiante.apellidos}`;
-        const urlConParametros = `${URL_APPS_SCRIPT}?fecha=${encodeURIComponent(fechaStr)}&hora=${encodeURIComponent(horaStr)}&idQR=${encodeURIComponent(codigoLimpio)}&estudiante=${encodeURIComponent(nombreCompleto)}&estado=Presente`;
+        const formData = new URLSearchParams();
+        formData.append('fecha', fechaStrNorm);
+        formData.append('hora', horaStr);
+        formData.append('idQR', codigoLimpio);
+        formData.append('estudiante', nombreCompleto);
+        formData.append('estado', 'Presente');
 
-        await fetch(urlConParametros, {
+        await fetch(URL_APPS_SCRIPT, {
             method: 'POST',
-            mode: 'no-cors'
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
         });
     } catch (e) {
         console.error("Error guardando en la hoja de cálculo:", e);
