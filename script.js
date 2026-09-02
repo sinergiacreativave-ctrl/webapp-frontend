@@ -3,8 +3,8 @@ const SHEET_CSV_ESTUDIANTES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1v
 const SHEET_CSV_NOTAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=2097122187&single=true&output=csv';
 const SHEET_CSV_ASISTENCIA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=1890009950&single=true&output=csv';
 
-// URL de tu ejecutable de Google Apps Script
-const URL_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycbwyay8rAIAXAy_951jvj_N-L4zv8EP41AsxzVe612jwtH15JEKt5h1axEo5pxUN6onv/exec';
+// NUEVA URL de tu ejecutable de Google Apps Script
+const URL_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycbw7kxRjvJJJbGd5vVWW9QtGcoQn0vxE47MejC_FjmzkqPD1peIfGXzUnjEfo0ytXY_f/exec';
 
 const PIN_DOCENTE = "1234"; // PIN de acceso para la Maestra de Guardia
 
@@ -382,20 +382,23 @@ async function alEscanearModoGuardia(codigoEscaneado) {
         elContador.innerText = `${conteos[gradoBase] || 0} / 25`;
     }
 
+    // --- NUEVO MÉTODO DE ENVÍO VÍA GET ---
     try {
         const nombreCompleto = `${estudiante.nombres} ${estudiante.apellidos}`;
-        const formData = new URLSearchParams();
-        formData.append('fecha', fechaStrNorm);
-        formData.append('hora', horaStr);
-        formData.append('idQR', codigoLimpio);
-        formData.append('estudiante', nombreCompleto);
-        formData.append('estado', 'Presente');
+        
+        const params = new URLSearchParams({
+            fecha: fechaStrNorm,
+            hora: horaStr,
+            idQR: codigoLimpio,
+            estudiante: nombreCompleto,
+            estado: 'Presente'
+        });
 
-        await fetch(URL_APPS_SCRIPT, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: formData.toString()
+        const urlFinal = `${URL_APPS_SCRIPT}?${params.toString()}`;
+
+        await fetch(urlFinal, {
+            method: 'GET',
+            mode: 'no-cors'
         });
     } catch (e) {
         console.error("Error guardando en la hoja de cálculo:", e);
