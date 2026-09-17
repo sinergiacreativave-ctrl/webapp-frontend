@@ -3,6 +3,10 @@ const SHEET_CSV_ESTUDIANTES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1v
 const SHEET_CSV_NOTAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=2097122187&single=true&output=csv';
 const SHEET_CSV_ASISTENCIA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=1890009950&single=true&output=csv';
 
+// NUEVOS ENLACES CSV DEL PERSONAL (Reemplázalos por los tuyos)
+const SHEET_CSV_PERSONAL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=1608645723&single=true&output=csv';
+const SHEET_CSV_ASISTENCIA_PERSONAL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=1735121026&single=true&output=csv';
+
 // NUEVA URL de tu ejecutable de Google Apps Script
 const URL_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycbw7kxRjvJJJbGd5vVWW9QtGcoQn0vxE47MejC_FjmzkqPD1peIfGXzUnjEfo0ytXY_f/exec';
 
@@ -16,6 +20,9 @@ const fotosInvitaciones = [
 let bdEstudiantes = []; 
 let bdNotas = [];
 let bdAsistencia = [];
+let bdPersonal = []; // Nueva base de datos
+let bdAsistenciaPersonal = []; // Nueva base de datos
+
 let intervaloCarrusel = null;
 let escanerContinuo = null;
 let procesandoEscaneo = false;
@@ -61,6 +68,33 @@ async function cargarDatos() {
                 estado: val[3]?.trim() 
             };
         }).filter(a => a.idQR);
+
+        // --- CARGAR DATOS DEL PERSONAL ---
+        const resPers = await fetch(SHEET_CSV_PERSONAL);
+        const csvPers = await resPers.text();
+        bdPersonal = csvPers.split(/\r?\n/).slice(1).map(fila => {
+            const val = fila.split(',');
+            return {
+                idQR: val[0]?.trim(),
+                cedula: val[1]?.trim(),
+                nombres: val[2]?.trim(),
+                apellidos: val[3]?.trim(),
+                cargo: val[4]?.trim(),
+                foto: val[5]?.trim()
+            };
+        }).filter(p => p.idQR);
+
+        const resAsistPers = await fetch(SHEET_CSV_ASISTENCIA_PERSONAL);
+        const csvAsistPers = await resAsistPers.text();
+        bdAsistenciaPersonal = csvAsistPers.split(/\r?\n/).slice(1).map(fila => {
+            const val = fila.split(',');
+            return {
+                fecha: val[0]?.trim(),
+                idQR: val[1]?.trim(),
+                hora_entrada: val[4]?.trim(),
+                hora_salida: val[5]?.trim()
+            };
+        }).filter(ap => ap.idQR);
 
     } catch (error) {
         console.error('Error cargando datos:', error);
@@ -205,7 +239,6 @@ function generarCalendarioAsistencia(registrosAlumno) {
 // --- FUNCIONES DE NORMALIZACIÓN DE GRADOS Y GRUPOS ---
 function obtenerFechaNormalizada(fechaStr) {
     if (!fechaStr) return "";
-    // Convierte fechas "YYYY-MM-DD" o "DD/MM/YYYY" a "D/M/YYYY" sin ceros a la izquierda
     if (fechaStr.includes("-")) {
         const [y, m, d] = fechaStr.split("-");
         return `${parseInt(d, 10)}/${parseInt(m, 10)}/${y}`;
@@ -221,12 +254,10 @@ function normalizarGradoBase(gradoRaw) {
     if (!gradoRaw) return "";
     const str = String(gradoRaw).trim().toUpperCase();
 
-    // Preescolar (Se evalúan romanos antes para no confundir III con I)
     if (str.includes("III") || str.includes("3ER GRUPO")) return "III Grupo";
     if (str.includes("II") || str.includes("2DO GRUPO")) return "II Grupo";
     if (str.includes("I GRUPO") || str.includes("1ER GRUPO")) return "I Grupo";
 
-    // Primaria
     if (str.includes("1")) return "1er Grado A";
     if (str.includes("2")) return "2do Grado A";
     if (str.includes("3")) return "3er Grado A";
@@ -241,7 +272,6 @@ function calcularAsistenciaHoyPorGrado() {
     const hoy = new Date();
     const fechaHoyNorm = `${hoy.getDate()}/${hoy.getMonth() + 1}/${hoy.getFullYear()}`;
     
-    // Objeto con la lista exacta de las 9 opciones
     const conteos = { 
         "I Grupo": 0, 
         "II Grupo": 0, 
@@ -336,15 +366,55 @@ function iniciarPanelAdmin() {
     escanerContinuo.render(alEscanearModoGuardia, () => {});
 }
 
-// --- ESCANEO Y ACTUALIZACIÓN EN VIVO ---
+// --- ESCANEO Y ACTUALIZACIÓN EN VIVO (DOCENTE GUARDIA) ---
 async function alEscanearModoGuardia(codigoEscaneado) {
     if (procesandoEscaneo) return;
     procesandoEscaneo = true;
 
     const codigoLimpio = codigoEscaneado.trim();
     const estudiante = bdEstudiantes.find(e => e.idQR === codigoLimpio);
+    const personal = bdPersonal.find(p => p.idQR === codigoLimpio); // Busca en el personal
     const alertaDiv = document.getElementById('alerta-escaneo');
 
+    const hoy = new Date();
+    const fechaStrNorm = `${hoy.getDate()}/${hoy.getMonth() + 1}/${hoy.getFullYear()}`;
+    const horaStr = hoy.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    // --- SI ES PERSONAL ---
+    if (personal) {
+        const yaRegistroEntrada = bdAsistenciaPersonal.some(a => a.idQR === codigoLimpio && obtenerFechaNormalizada(a.fecha) === fechaStrNorm);
+        const yaRegistroSalida = bdAsistenciaPersonal.some(a => a.idQR === codigoLimpio && obtenerFechaNormalizada(a.fecha) === fechaStrNorm && a.hora_salida && a.hora_salida !== "");
+
+        if (yaRegistroSalida) {
+            alertaDiv.className = "alerta-escaneo repetido";
+            alertaDiv.innerText = `⚠️ ${personal.nombres} ya registró salida hoy.`;
+        } else if (yaRegistroEntrada) {
+            alertaDiv.className = "alerta-escaneo exito";
+            alertaDiv.innerText = `✅ Salida Registrada: ${personal.nombres} (${personal.cargo})`;
+            
+            // Envía la salida al script
+            enviarAsistencia(fechaStrNorm, horaStr, codigoLimpio, `${personal.nombres} ${personal.apellidos}`, 'personal', personal.cargo);
+            
+            // Actualiza localmente para no repetir el escaneo
+            const regLocal = bdAsistenciaPersonal.find(a => a.idQR === codigoLimpio && obtenerFechaNormalizada(a.fecha) === fechaStrNorm);
+            if(regLocal) regLocal.hora_salida = horaStr;
+        } else {
+            alertaDiv.className = "alerta-escaneo exito";
+            alertaDiv.innerText = `✅ Entrada Registrada: ${personal.nombres} (${personal.cargo})`;
+            
+            // Envía la entrada al script
+            enviarAsistencia(fechaStrNorm, horaStr, codigoLimpio, `${personal.nombres} ${personal.apellidos}`, 'personal', personal.cargo);
+            
+            // Actualiza localmente
+            bdAsistenciaPersonal.push({ fecha: fechaStrNorm, idQR: codigoLimpio, hora_entrada: horaStr, hora_salida: "" });
+        }
+
+        alertaDiv.style.display = "block";
+        setTimeout(() => { procesandoEscaneo = false; alertaDiv.style.display = "none"; }, 2500);
+        return;
+    }
+
+    // --- SI ES ESTUDIANTE ---
     if (!estudiante) {
         alertaDiv.className = "alerta-escaneo repetido";
         alertaDiv.innerText = "❌ Carnet no registrado en el sistema";
@@ -352,10 +422,6 @@ async function alEscanearModoGuardia(codigoEscaneado) {
         setTimeout(() => { procesandoEscaneo = false; alertaDiv.style.display = "none"; }, 2000);
         return;
     }
-
-    const hoy = new Date();
-    const fechaStrNorm = `${hoy.getDate()}/${hoy.getMonth() + 1}/${hoy.getFullYear()}`;
-    const horaStr = hoy.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
     const yaRegistrado = bdAsistencia.some(a => a.idQR === codigoLimpio && obtenerFechaNormalizada(a.fecha) === fechaStrNorm);
 
@@ -373,7 +439,7 @@ async function alEscanearModoGuardia(codigoEscaneado) {
 
     bdAsistencia.push({ fecha: fechaStrNorm, hora: horaStr, idQR: codigoLimpio, estado: 'Presente' });
 
-    // Actualiza la tarjeta correspondiente al instante
+    // Actualiza tarjeta
     const gradoBase = normalizarGradoBase(estudiante.grado);
     const idContador = `cnt-${gradoBase.replace(/\s+/g, '')}`;
     const elContador = document.getElementById(idContador);
@@ -382,27 +448,7 @@ async function alEscanearModoGuardia(codigoEscaneado) {
         elContador.innerText = `${conteos[gradoBase] || 0} / 25`;
     }
 
-    // --- NUEVO MÉTODO DE ENVÍO VÍA GET ---
-    try {
-        const nombreCompleto = `${estudiante.nombres} ${estudiante.apellidos}`;
-        
-        const params = new URLSearchParams({
-            fecha: fechaStrNorm,
-            hora: horaStr,
-            idQR: codigoLimpio,
-            estudiante: nombreCompleto,
-            estado: 'Presente'
-        });
-
-        const urlFinal = `${URL_APPS_SCRIPT}?${params.toString()}`;
-
-        await fetch(urlFinal, {
-            method: 'GET',
-            mode: 'no-cors'
-        });
-    } catch (e) {
-        console.error("Error guardando en la hoja de cálculo:", e);
-    }
+    enviarAsistencia(fechaStrNorm, horaStr, codigoLimpio, `${estudiante.nombres} ${estudiante.apellidos}`, 'estudiante');
 
     setTimeout(() => {
         procesandoEscaneo = false;
@@ -410,7 +456,32 @@ async function alEscanearModoGuardia(codigoEscaneado) {
     }, 2200);
 }
 
-// --- 6. ESCÁNER QR ESTUDIANTE Y RENDERIZADO DEL PERFIL ---
+// Función auxiliar para enviar datos a Apps Script (GET)
+async function enviarAsistencia(fecha, hora, idQR, nombre, tipo, cargo = "") {
+    try {
+        const params = new URLSearchParams({
+            fecha: fecha,
+            hora: hora,
+            idQR: idQR,
+            tipo: tipo, // 'estudiante' o 'personal'
+            estado: 'Presente'
+        });
+
+        if (tipo === 'estudiante') {
+            params.append('estudiante', nombre);
+        } else if (tipo === 'personal') {
+            params.append('empleado', nombre);
+            params.append('cargo', cargo);
+        }
+
+        const urlFinal = `${URL_APPS_SCRIPT}?${params.toString()}`;
+        await fetch(urlFinal, { method: 'GET', mode: 'no-cors' });
+    } catch (e) {
+        console.error("Error guardando en la hoja de cálculo:", e);
+    }
+}
+
+// --- 6. ESCÁNER QR PRINCIPAL Y RENDERIZADO DEL PERFIL ---
 const btnEscanear = document.getElementById('btn-escanear');
 const resultadoDiv = document.getElementById('resultado');
 const textoInicio = document.getElementById('texto-inicio');
@@ -422,9 +493,9 @@ btnEscanear.addEventListener('click', () => {
     resultadoDiv.innerHTML = "Cargando cámara...";
 
     const escaner = new Html5QrcodeScanner("lector-qr", { fps: 10, qrbox: {width: 250, height: 250} }, false);
-    escaner.render(alLeerQREstudiante, () => {});
+    escaner.render(alLeerQRPrincipal, () => {});
 
-    function alLeerQREstudiante(codigoEscaneado) {
+    function alLeerQRPrincipal(codigoEscaneado) {
         escaner.clear();
         btnEscanear.style.display = 'none';
         btnAdminLogin.style.display = 'none';
@@ -432,6 +503,7 @@ btnEscanear.addEventListener('click', () => {
 
         const codigoLimpio = codigoEscaneado.trim();
         const estudiante = bdEstudiantes.find(est => est.idQR === codigoLimpio);
+        const personal = bdPersonal.find(per => per.idQR === codigoLimpio);
 
         const headerInstitucional = `
             <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 15px; background: white; padding: 10px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
@@ -440,6 +512,7 @@ btnEscanear.addEventListener('click', () => {
             </div>
         `;
 
+        // --- SI EL CÓDIGO ES DE UN ESTUDIANTE (Muestra perfil académico completo) ---
         if (estudiante) {
             const susNotas = bdNotas.filter(n => n.idQR === codigoLimpio);
             const suAsistencia = bdAsistencia.filter(a => a.idQR === codigoLimpio);
@@ -537,7 +610,32 @@ btnEscanear.addEventListener('click', () => {
             if (fotosInvitaciones.length > 0) {
                 setTimeout(abrirModalInvitaciones, 400);
             }
+        
+        // --- SI EL CÓDIGO ES DE UN MIEMBRO DEL PERSONAL ---
+        } else if (personal) {
+            
+            let imgSrc = 'https://via.placeholder.com/80?text=Sin+Foto';
+            if (personal.foto && personal.foto !== '') {
+                const nombreArchivo = personal.foto.replace('fotos/', '');
+                imgSrc = `fotos/${nombreArchivo}`;
+            }
 
+            // Mostrar un perfil muy simple (sin notas ni calendario) solo para confirmar su identidad visualmente
+            resultadoDiv.innerHTML = `
+                ${headerInstitucional}
+                <div class="dashboard" style="padding: 12px; text-align: center;">
+                    <h3 style="color: #1e3a8a; margin-top: 0;">Perfil de Personal</h3>
+                    <img src="${imgSrc}" alt="Foto" style="width: 120px; height: 120px; border-radius: 50%; margin: 15px auto; display: block; border: 3px solid #cbd5e1;" onerror="this.src='https://via.placeholder.com/80?text=Sin+Foto'">
+                    <h2 style="margin: 5px 0; font-size: 18px;">${personal.nombres} ${personal.apellidos}</h2>
+                    <p style="margin: 5px 0; color: #475569; font-weight: bold; font-size: 14px;">Cargo: ${personal.cargo}</p>
+                    <p style="margin: 5px 0 20px 0; color: #64748b; font-size: 12px;">C.I.: ${personal.cedula}</p>
+                    
+                    <button id="btn-salir" class="btn-salida" style="padding: 10px; font-size: 14px; width: 100%;">🚪 Salir</button>
+                </div>
+            `;
+            document.getElementById('btn-salir').addEventListener('click', () => { location.reload(); });
+
+        // --- SI EL CÓDIGO NO EXISTE ---
         } else {
             resultadoDiv.innerHTML = `
                 ${headerInstitucional}
