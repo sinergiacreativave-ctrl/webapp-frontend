@@ -8,7 +8,7 @@ const SHEET_CSV_PERSONAL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCD
 const SHEET_CSV_ASISTENCIA_PERSONAL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=1735121026&single=true&output=csv';
 
 // URL de tu ejecutable de Google Apps Script
-const URL_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycbw7kxRjvJJJbGd5vVWW9QtGcoQn0vxE47MejC_FjmzkqPD1peIfGXzUnjEfo0ytXY_f/exec';
+const URL_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycbzo5hVuLcYbtlhQNUA67kizv1_P4I_sAErR6AXFN156-RGDr9CJB06Gq0FpYX6rfE5t/exec';
 
 const PIN_DOCENTE = "1234"; // PIN de acceso para la Maestra de Guardia
 
