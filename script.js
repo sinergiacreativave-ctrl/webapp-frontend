@@ -3,11 +3,11 @@ const SHEET_CSV_ESTUDIANTES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1v
 const SHEET_CSV_NOTAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=2097122187&single=true&output=csv';
 const SHEET_CSV_ASISTENCIA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=1890009950&single=true&output=csv';
 
-// NUEVOS ENLACES CSV DEL PERSONAL (Reemplázalos por los tuyos)
+// ENLACES CSV DEL PERSONAL
 const SHEET_CSV_PERSONAL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=1608645723&single=true&output=csv';
 const SHEET_CSV_ASISTENCIA_PERSONAL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=1735121026&single=true&output=csv';
 
-// NUEVA URL de tu ejecutable de Google Apps Script
+// URL de tu ejecutable de Google Apps Script
 const URL_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycbw7kxRjvJJJbGd5vVWW9QtGcoQn0vxE47MejC_FjmzkqPD1peIfGXzUnjEfo0ytXY_f/exec';
 
 const PIN_DOCENTE = "1234"; // PIN de acceso para la Maestra de Guardia
@@ -20,8 +20,8 @@ const fotosInvitaciones = [
 let bdEstudiantes = []; 
 let bdNotas = [];
 let bdAsistencia = [];
-let bdPersonal = []; // Nueva base de datos
-let bdAsistenciaPersonal = []; // Nueva base de datos
+let bdPersonal = []; 
+let bdAsistenciaPersonal = []; 
 
 let intervaloCarrusel = null;
 let escanerContinuo = null;
@@ -235,8 +235,6 @@ function generarCalendarioAsistencia(registrosAlumno) {
 }
 
 // --- 5. PERFIL ADMINISTRATIVO (DOCENTE DE GUARDIA) ---
-
-// --- FUNCIONES DE NORMALIZACIÓN DE GRADOS Y GRUPOS ---
 function obtenerFechaNormalizada(fechaStr) {
     if (!fechaStr) return "";
     if (fechaStr.includes("-")) {
@@ -335,6 +333,18 @@ function iniciarPanelAdmin() {
     const resultadoDiv = document.getElementById('resultado');
     const conteosHoy = calcularAsistenciaHoyPorGrado();
 
+    // CALCULAR PERSONAL PRESENTE (Personas con entrada registrada hoy pero sin salida)
+    const hoy = new Date();
+    const fechaHoyNorm = `${hoy.getDate()}/${hoy.getMonth() + 1}/${hoy.getFullYear()}`;
+    let personalPresente = 0;
+    bdAsistenciaPersonal.forEach(a => {
+        if (obtenerFechaNormalizada(a.fecha) === fechaHoyNorm) {
+            if (!a.hora_salida || a.hora_salida === "") {
+                personalPresente++;
+            }
+        }
+    });
+
     resultadoDiv.innerHTML = `
         <div class="dashboard">
             <h2 style="color: #1e3a8a; margin: 0 0 5px 0; font-size: 18px;">📋 Control de Asistencia en Vivo</h2>
@@ -342,16 +352,26 @@ function iniciarPanelAdmin() {
             
             <div id="alerta-escaneo" class="alerta-escaneo"></div>
 
+            <!-- PANEL DE PERSONAL PRESENTE -->
+            <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center; border: 1px solid #bae6fd; width: 100%; box-sizing: border-box;">
+                <h3 style="margin: 0 0 5px 0; color: #0369a1; font-size: 16px;">Personal Presente</h3>
+                <div id="cnt-personal" style="font-size: 28px; font-weight: bold; color: #0284c7;">${personalPresente}</div>
+            </div>
+
+            <!-- CONTEO DE ESTUDIANTES (Sin el /25) -->
             <div class="admin-grid-grados">
                 ${Object.keys(conteosHoy).map(grado => `
                     <div class="tarjeta-grado">
                         <h4>${grado}</h4>
-                        <div class="conteo" id="cnt-${grado.replace(/\s+/g, '')}">${conteosHoy[grado]} / 25</div>
+                        <div class="conteo" id="cnt-${grado.replace(/\s+/g, '')}">${conteosHoy[grado]}</div>
                     </div>
                 `).join('')}
             </div>
 
             <div id="lector-qr-admin" style="margin: 10px 0;"></div>
+            
+            <!-- MODAL OCULTO PARA CONFIRMACIÓN MANUAL DE PERSONAL -->
+            <div id="modal-confirmacion-personal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;"></div>
 
             <button id="btn-cerrar-admin" class="btn-salida" style="margin-top: 10px;">🚪 Salir de Modo Guardia</button>
         </div>
@@ -373,48 +393,50 @@ async function alEscanearModoGuardia(codigoEscaneado) {
 
     const codigoLimpio = codigoEscaneado.trim();
     const estudiante = bdEstudiantes.find(e => e.idQR === codigoLimpio);
-    const personal = bdPersonal.find(p => p.idQR === codigoLimpio); // Busca en el personal
+    const personal = bdPersonal.find(p => p.idQR === codigoLimpio);
     const alertaDiv = document.getElementById('alerta-escaneo');
 
     const hoy = new Date();
     const fechaStrNorm = `${hoy.getDate()}/${hoy.getMonth() + 1}/${hoy.getFullYear()}`;
     const horaStr = hoy.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-    // --- SI ES PERSONAL ---
+    // --- OPCIÓN B: SI ES PERSONAL SE PAUSA LA CÁMARA Y MUESTRA BOTONES ---
     if (personal) {
-        const yaRegistroEntrada = bdAsistenciaPersonal.some(a => a.idQR === codigoLimpio && obtenerFechaNormalizada(a.fecha) === fechaStrNorm);
-        const yaRegistroSalida = bdAsistenciaPersonal.some(a => a.idQR === codigoLimpio && obtenerFechaNormalizada(a.fecha) === fechaStrNorm && a.hora_salida && a.hora_salida !== "");
-
-        if (yaRegistroSalida) {
-            alertaDiv.className = "alerta-escaneo repetido";
-            alertaDiv.innerText = `⚠️ ${personal.nombres} ya registró salida hoy.`;
-        } else if (yaRegistroEntrada) {
-            alertaDiv.className = "alerta-escaneo exito";
-            alertaDiv.innerText = `✅ Salida Registrada: ${personal.nombres} (${personal.cargo})`;
-            
-            // Envía la salida al script
-            enviarAsistencia(fechaStrNorm, horaStr, codigoLimpio, `${personal.nombres} ${personal.apellidos}`, 'personal', personal.cargo);
-            
-            // Actualiza localmente para no repetir el escaneo
-            const regLocal = bdAsistenciaPersonal.find(a => a.idQR === codigoLimpio && obtenerFechaNormalizada(a.fecha) === fechaStrNorm);
-            if(regLocal) regLocal.hora_salida = horaStr;
-        } else {
-            alertaDiv.className = "alerta-escaneo exito";
-            alertaDiv.innerText = `✅ Entrada Registrada: ${personal.nombres} (${personal.cargo})`;
-            
-            // Envía la entrada al script
-            enviarAsistencia(fechaStrNorm, horaStr, codigoLimpio, `${personal.nombres} ${personal.apellidos}`, 'personal', personal.cargo);
-            
-            // Actualiza localmente
-            bdAsistenciaPersonal.push({ fecha: fechaStrNorm, idQR: codigoLimpio, hora_entrada: horaStr, hora_salida: "" });
+        if (escanerContinuo) escanerContinuo.pause(true); 
+        
+        const modalPersonal = document.getElementById('modal-confirmacion-personal');
+        let imgSrc = 'https://via.placeholder.com/80?text=Sin+Foto';
+        if (personal.foto && personal.foto !== '') {
+            const nombreArchivo = personal.foto.replace('fotos/', '');
+            imgSrc = `fotos/${nombreArchivo}`;
         }
+        
+        modalPersonal.innerHTML = `
+            <div style="background: white; padding: 20px; border-radius: 12px; text-align: center; width: 300px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                <img src="${imgSrc}" style="width: 100px; height: 100px; border-radius: 50%; margin-bottom: 10px; border: 3px solid #cbd5e1;" onerror="this.src='https://via.placeholder.com/80?text=Sin+Foto'">
+                <h2 style="margin: 0 0 5px 0; color: #1e3a8a; font-size: 18px;">${personal.nombres} ${personal.apellidos}</h2>
+                <p style="margin: 0 0 20px 0; color: #64748b; font-weight: bold; font-size: 14px;">${personal.cargo}</p>
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button id="btn-marcar-entrada" style="background: #22c55e; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; flex: 1; cursor: pointer; font-size: 15px;">Entrada</button>
+                    <button id="btn-marcar-salida" style="background: #ef4444; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; flex: 1; cursor: pointer; font-size: 15px;">Salida</button>
+                </div>
+                <button id="btn-cancelar-accion" style="margin-top: 20px; background: transparent; color: #64748b; border: none; text-decoration: underline; cursor: pointer; font-size: 14px;">Cancelar y Volver</button>
+            </div>
+        `;
+        modalPersonal.style.display = 'flex';
 
-        alertaDiv.style.display = "block";
-        setTimeout(() => { procesandoEscaneo = false; alertaDiv.style.display = "none"; }, 2500);
-        return;
+        // Lógica de los botones
+        document.getElementById('btn-marcar-entrada').onclick = () => procesarAccionPersonal(personal, 'entrada', codigoLimpio, fechaStrNorm, horaStr, alertaDiv);
+        document.getElementById('btn-marcar-salida').onclick = () => procesarAccionPersonal(personal, 'salida', codigoLimpio, fechaStrNorm, horaStr, alertaDiv);
+        document.getElementById('btn-cancelar-accion').onclick = () => {
+            modalPersonal.style.display = 'none';
+            procesandoEscaneo = false;
+            if (escanerContinuo) escanerContinuo.resume();
+        };
+        return; // Terminamos aquí, el usuario debe pulsar un botón
     }
 
-    // --- SI ES ESTUDIANTE ---
+    // --- SI ES ESTUDIANTE (Mismo flujo automático de antes) ---
     if (!estudiante) {
         alertaDiv.className = "alerta-escaneo repetido";
         alertaDiv.innerText = "❌ Carnet no registrado en el sistema";
@@ -439,13 +461,13 @@ async function alEscanearModoGuardia(codigoEscaneado) {
 
     bdAsistencia.push({ fecha: fechaStrNorm, hora: horaStr, idQR: codigoLimpio, estado: 'Presente' });
 
-    // Actualiza tarjeta
+    // Actualiza la tarjeta numérica en vivo sin el /25
     const gradoBase = normalizarGradoBase(estudiante.grado);
     const idContador = `cnt-${gradoBase.replace(/\s+/g, '')}`;
     const elContador = document.getElementById(idContador);
     if (elContador) {
         const conteos = calcularAsistenciaHoyPorGrado();
-        elContador.innerText = `${conteos[gradoBase] || 0} / 25`;
+        elContador.innerText = `${conteos[gradoBase] || 0}`;
     }
 
     enviarAsistencia(fechaStrNorm, horaStr, codigoLimpio, `${estudiante.nombres} ${estudiante.apellidos}`, 'estudiante');
@@ -456,14 +478,54 @@ async function alEscanearModoGuardia(codigoEscaneado) {
     }, 2200);
 }
 
-// Función auxiliar para enviar datos a Apps Script (GET)
-async function enviarAsistencia(fecha, hora, idQR, nombre, tipo, cargo = "") {
+// Función secundaria que se dispara al tocar "Entrada" o "Salida" en el modal de la Maestra
+function procesarAccionPersonal(personal, accion, idQR, fechaStrNorm, horaStr, alertaDiv) {
+    document.getElementById('modal-confirmacion-personal').style.display = 'none';
+    
+    if (accion === 'entrada') {
+        alertaDiv.className = "alerta-escaneo exito";
+        alertaDiv.innerText = `✅ Entrada: ${personal.nombres} (${personal.cargo})`;
+        
+        // Sumamos al contador global azul
+        const elPersonal = document.getElementById('cnt-personal');
+        if(elPersonal) elPersonal.innerText = parseInt(elPersonal.innerText) + 1;
+        
+        // Lo guardamos localmente en la memoria
+        bdAsistenciaPersonal.push({ fecha: fechaStrNorm, idQR: idQR, hora_entrada: horaStr, hora_salida: "" });
+    } else {
+        alertaDiv.className = "alerta-escaneo exito";
+        alertaDiv.innerText = `✅ Salida: ${personal.nombres} (${personal.cargo})`;
+        
+        // Restamos del contador global azul (evitando que baje de 0)
+        const elPersonal = document.getElementById('cnt-personal');
+        if(elPersonal) {
+            let actual = parseInt(elPersonal.innerText);
+            elPersonal.innerText = actual > 0 ? actual - 1 : 0;
+        }
+
+        // Actualizamos localmente para el frontend
+        const regLocal = bdAsistenciaPersonal.find(a => a.idQR === idQR && obtenerFechaNormalizada(a.fecha) === fechaStrNorm);
+        if (regLocal) regLocal.hora_salida = horaStr;
+    }
+    
+    alertaDiv.style.display = "block";
+    enviarAsistencia(fechaStrNorm, horaStr, idQR, `${personal.nombres} ${personal.apellidos}`, 'personal', personal.cargo, accion);
+    
+    setTimeout(() => { 
+        procesandoEscaneo = false; 
+        alertaDiv.style.display = "none"; 
+        if (escanerContinuo) escanerContinuo.resume();
+    }, 2500);
+}
+
+// Función auxiliar para enviar datos a Apps Script (Añadido el parámetro accion)
+async function enviarAsistencia(fecha, hora, idQR, nombre, tipo, cargo = "", accion = "") {
     try {
         const params = new URLSearchParams({
             fecha: fecha,
             hora: hora,
             idQR: idQR,
-            tipo: tipo, // 'estudiante' o 'personal'
+            tipo: tipo,
             estado: 'Presente'
         });
 
@@ -472,6 +534,7 @@ async function enviarAsistencia(fecha, hora, idQR, nombre, tipo, cargo = "") {
         } else if (tipo === 'personal') {
             params.append('empleado', nombre);
             params.append('cargo', cargo);
+            params.append('accion', accion); 
         }
 
         const urlFinal = `${URL_APPS_SCRIPT}?${params.toString()}`;
@@ -512,11 +575,9 @@ btnEscanear.addEventListener('click', () => {
             </div>
         `;
 
-        // --- SI EL CÓDIGO ES DE UN ESTUDIANTE (Muestra perfil académico completo) ---
         if (estudiante) {
             const susNotas = bdNotas.filter(n => n.idQR === codigoLimpio);
             const suAsistencia = bdAsistencia.filter(a => a.idQR === codigoLimpio);
-
             const areasFijas = [
                 "Lengua", "Matemática", "Ciencias de la naturaleza y tecnología",
                 "Ciencias sociales", "Educación estética", "Educación física",
@@ -559,7 +620,6 @@ btnEscanear.addEventListener('click', () => {
             </div>`;
 
             let htmlCalendario = generarCalendarioAsistencia(suAsistencia);
-
             let imgSrc = 'https://via.placeholder.com/80?text=Sin+Foto';
             if (estudiante.foto && estudiante.foto !== '') {
                 const nombreArchivo = estudiante.foto.replace('fotos/', '');
@@ -601,26 +661,16 @@ btnEscanear.addEventListener('click', () => {
 
             document.getElementById('btn-ver-invitaciones').addEventListener('click', abrirModalInvitaciones);
             document.getElementById('btn-plan-evaluacion').addEventListener('click', () => { abrirModalPlanEvaluacion(estudiante.grado); });
+            document.getElementById('btn-salir').addEventListener('click', () => { cerrarModalInvitaciones(); location.reload(); });
+            if (fotosInvitaciones.length > 0) { setTimeout(abrirModalInvitaciones, 400); }
 
-            document.getElementById('btn-salir').addEventListener('click', () => {
-                cerrarModalInvitaciones();
-                location.reload();
-            });
-
-            if (fotosInvitaciones.length > 0) {
-                setTimeout(abrirModalInvitaciones, 400);
-            }
-        
-        // --- SI EL CÓDIGO ES DE UN MIEMBRO DEL PERSONAL ---
         } else if (personal) {
-            
             let imgSrc = 'https://via.placeholder.com/80?text=Sin+Foto';
             if (personal.foto && personal.foto !== '') {
                 const nombreArchivo = personal.foto.replace('fotos/', '');
                 imgSrc = `fotos/${nombreArchivo}`;
             }
 
-            // Mostrar un perfil muy simple (sin notas ni calendario) solo para confirmar su identidad visualmente
             resultadoDiv.innerHTML = `
                 ${headerInstitucional}
                 <div class="dashboard" style="padding: 12px; text-align: center;">
@@ -635,7 +685,6 @@ btnEscanear.addEventListener('click', () => {
             `;
             document.getElementById('btn-salir').addEventListener('click', () => { location.reload(); });
 
-        // --- SI EL CÓDIGO NO EXISTE ---
         } else {
             resultadoDiv.innerHTML = `
                 ${headerInstitucional}
