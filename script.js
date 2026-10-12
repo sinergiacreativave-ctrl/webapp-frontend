@@ -10,7 +10,8 @@ const SHEET_CSV_TIENDA_PRODUCTOS = 'https://docs.google.com/spreadsheets/d/e/2PA
 const SHEET_CSV_PEDIDOS_TIENDA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=1496442334&single=true&output=csv';
 
 const URL_APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycbw7kxRjvJJJbGd5vVWW9QtGcoQn0vxE47MejC_FjmzkqPD1peIfGXzUnjEfo0ytXY_f/exec';
-const PIN_DOCENTE = "1234"; // PIN de acceso
+const PIN_DOCENTE = "1234"; // PIN de acceso para la Maestra de Guardia
+const PIN_TIENDA = "2503";  // NUEVA Contraseña exclusiva para Administrar la Tienda
 
 const fotosInvitaciones = [
     'fotos/evento1.jpg',
@@ -583,7 +584,11 @@ function iniciarPanelAdmin() {
     `;
 
     document.getElementById('btn-tab-asistencia').addEventListener('click', () => iniciarPanelAdmin());
-    document.getElementById('btn-tab-tienda-admin').addEventListener('click', () => renderizarPanelAdminTienda());
+    
+    // Al hacer clic en Adm. Tienda, lanzamos el modal estilizado pidiendo la contraseña 2503
+    document.getElementById('btn-tab-tienda-admin').addEventListener('click', () => {
+        solicitarPasswordTienda();
+    });
 
     document.getElementById('btn-cerrar-admin').addEventListener('click', () => {
         if (escanerContinuo) escanerContinuo.clear();
@@ -592,6 +597,54 @@ function iniciarPanelAdmin() {
 
     escanerContinuo = new Html5QrcodeScanner("lector-qr-admin", { fps: 10, qrbox: { width: 220, height: 220 } }, false);
     escanerContinuo.render(alEscanearModoGuardia, () => {});
+}
+
+// NUEVA FUNCIÓN: Modal estilizado para la clave de administración de tienda
+function solicitarPasswordTienda() {
+    let modal = document.getElementById('modal-password-tienda');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-password-tienda';
+        modal.className = 'modal-overlay';
+        document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+        <div class="modal-contenido" style="max-width: 340px; width: 90%; text-align: center; padding: 25px;">
+            <h3 style="margin-top: 0; color: #1e3a8a; font-size: 18px;">🔒 Seguridad de Tienda</h3>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">Ingrese la contraseña de administración:</p>
+            <input type="password" id="input-password-tienda" placeholder="••••" style="width: 80%; padding: 10px; font-size: 18px; text-align: center; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 15px; letter-spacing: 4px;" maxlength="6">
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-cancelar-pwd" style="flex: 1; background: #64748b; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer;">Cancelar</button>
+                <button id="btn-confirmar-pwd" style="flex: 1; background: #1e3a8a; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer;">Entrar</button>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
+    const inputPwd = document.getElementById('input-password-tienda');
+    inputPwd.focus();
+
+    // Eventos de los botones del modal
+    document.getElementById('btn-cancelar-pwd').addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    const validarPwd = () => {
+        if (inputPwd.value === PIN_TIENDA) {
+            modal.style.display = 'none';
+            renderizarPanelAdminTienda();
+        } else {
+            alert("Contraseña incorrecta");
+            inputPwd.value = '';
+            inputPwd.focus();
+        }
+    };
+
+    document.getElementById('btn-confirmar-pwd').addEventListener('click', validarPwd);
+    inputPwd.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') validarPwd();
+    });
 }
 
 function renderizarPanelAdminTienda() {
