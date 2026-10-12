@@ -191,7 +191,9 @@ function generarCalendarioAsistencia(registrosAlumno) {
     const totalDiasMes = new Date(ano, mes + 1, 0).getDate();
 
     const desfaseInicio = primerDiaMes === 0 ? 6 : primerDiaMes - 1;
-    const fechasAsistidas = registrosAlumno.map(r => r.fecha);
+    
+    // Normalizamos todas las fechas de asistencia del alumno para evitar problemas con ceros a la izquierda
+    const fechasAsistidasNorm = registrosAlumno.map(r => obtenerFechaNormalizada(r.fecha));
 
     let htmlCal = `
         <div style="margin-top: 15px; background: #fff; border-radius: 10px; padding: 10px; border: 1px solid #e2e8f0;">
@@ -213,12 +215,11 @@ function generarCalendarioAsistencia(registrosAlumno) {
         const diaSemana = fechaObj.getDay();
         const esFinDeSemana = (diaSemana === 0 || diaSemana === 6);
 
-        const diaPadded = String(dia).padStart(2, '0');
-        const mesPadded = String(mes + 1).padStart(2, '0');
-        const fechaStr1 = `${diaPadded}/${mesPadded}/${ano}`;
-        const fechaStr2 = `${ano}-${mesPadded}-${diaPadded}`;
+        // Generamos la fecha normalizada del día del calendario (sin ceros a la izquierda, ej: "5/10/2026")
+        const fechaDiaNorm = `${dia}/${mes + 1}/${ano}`;
 
-        const asistio = fechasAsistidas.some(f => f === fechaStr1 || f === fechaStr2 || f.startsWith(`${diaPadded}/${mesPadded}`));
+        // Verificamos si asistió comparando las fechas normalizadas
+        const asistio = fechasAsistidasNorm.some(fNorm => fNorm === fechaDiaNorm);
 
         let claseEstado = "";
         if (asistio) {
@@ -233,7 +234,6 @@ function generarCalendarioAsistencia(registrosAlumno) {
     htmlCal += `</div></div>`;
     return htmlCal;
 }
-
 // --- 5. PERFIL ADMINISTRATIVO (DOCENTE DE GUARDIA) ---
 function obtenerFechaNormalizada(fechaStr) {
     if (!fechaStr) return "";
