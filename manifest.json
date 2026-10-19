@@ -1,0 +1,20 @@
+{
+  "name": "Portal Escolar",
+  "short_name": "PortalEscolar",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f7f6",
+  "theme_color": "#1e3a8a",
+  "icons": [
+    {
+      "src": "fotos/icono-app.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "fotos/icono-app.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
