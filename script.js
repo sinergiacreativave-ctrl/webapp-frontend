@@ -5,7 +5,7 @@ const SHEET_CSV_ASISTENCIA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ
 const SHEET_CSV_PERSONAL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=1608645723&single=true&output=csv';
 const SHEET_CSV_ASISTENCIA_PERSONAL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=1735121026&single=true&output=csv';
 
-// NUEVOS ENLACES CSV DE LA TIENDA (Reemplázalos por los tuyos)
+// NUEVOS ENLACES CSV DE LA TIENDA
 const SHEET_CSV_TIENDA_PRODUCTOS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=1582006180&single=true&output=csv';
 const SHEET_CSV_PEDIDOS_TIENDA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQCDvJTzjCsI4AKTuqT3i1g1amMd5CXUBEYR7Ck6LUi141PX3za3dYkiy3oHV5zodaCmc1uAMqE8WZY/pub?gid=1496442334&single=true&output=csv';
 
@@ -216,7 +216,6 @@ function abrirModalTienda(estudiante) {
 }
 
 function renderizarVistaTiendaCatalogo(estudiante, modal) {
-    // Filtrar productos por categoría o mostrar ambos
     const mascotas = bdTiendaProductos.filter(p => p.categoria.toLowerCase().includes('mascota'));
     const especiales = bdTiendaProductos.filter(p => p.categoria.toLowerCase().includes('especial') || p.categoria.toLowerCase().includes('actividad'));
     const susPedidos = bdPedidosTienda.filter(p => p.idQR_estudiante === estudiante.idQR);
@@ -250,7 +249,6 @@ function renderizarVistaTiendaCatalogo(estudiante, modal) {
     document.getElementById('tab-cat').addEventListener('click', () => renderizarVistaTiendaCatalogo(estudiante, modal));
     document.getElementById('tab-mis-pedidos').addEventListener('click', () => renderizarMisPedidos(estudiante, modal));
 
-    // Agregar eventos a botones de comprar
     modal.querySelectorAll('.btn-comprar-prod').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const prodId = e.target.getAttribute('data-id');
@@ -337,7 +335,6 @@ function renderizarPanelPago(estudiante, producto, modal) {
 
             await fetch(`${URL_APPS_SCRIPT}?${params.toString()}`, { method: 'GET', mode: 'no-cors' });
 
-            // Añadir localmente
             bdPedidosTienda.push({
                 fecha: fechaStr,
                 hora: horaStr,
@@ -384,7 +381,7 @@ function renderizarMisPedidos(estudiante, modal) {
                 ${susPedidos.length === 0 ? '<p style="text-align:center; color:#64748b; font-size:13px; padding:20px;">No tienes pedidos registrados todavía.</p>' : 
                   susPedidos.map(p => `
                     <div style="border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; background: #fff; font-size: 12px;">
-                        <p style="margin: 2px 0;"><strong>Producto:</strong> ${p.producto}</p>                         <p style="margin: 2px 0;"><strong>Monto:</strong> $${p.monto} \vert{} <strong>Ref:</strong>${p.referencia}</p>
+                        <p style="margin: 2px 0;"><strong>Producto:</strong> ${p.producto}</p> <p style="margin: 2px 0;"><strong>Monto:</strong> $${p.monto} \vert{} <strong>Ref:</strong>${p.referencia}</p>
                         <p style="margin: 2px 0;"><strong>Fecha:</strong> ${p.fecha} (${p.hora})</p>
                         <p style="margin: 4px 0;"><strong>Estatus:</strong> <span style="padding: 2px 6px; border-radius: 4px; font-weight: bold; background: ${p.estado === 'Confirmado' ? '#d1fae5; color: #065f46;' : '#fef3c7; color: #92400e;'}">${p.estado}</span></p>${p.estado === 'Confirmado' ? `<button onclick='descargarComprobante(${JSON.stringify(p)})' style="margin-top: 6px; background: #059669; color: white; border: none; padding: 6px 10px; border-radius: 5px; font-size: 11px; cursor: pointer; width: 100%;">📥 Descargar Comprobante de Pago</button>` : '<p style="color: #64748b; font-style: italic; font-size: 11px; margin: 4px 0 0 0;">⏳ Su pago está siendo verificado por la administración.</p>'}
                     </div>
@@ -526,7 +523,6 @@ const btnCerrarPin = document.getElementById('btn-cerrar-pin');
 const btnConfirmarPin = document.getElementById('btn-confirmar-pin');
 const inputPin = document.getElementById('input-pin');
 
-// Cambiar texto del botón a Personal Autorizado si existe
 if(btnAdminLogin) btnAdminLogin.innerText = "🔐 Personal Autorizado";
 
 btnAdminLogin.addEventListener('click', () => {
@@ -585,7 +581,6 @@ function iniciarPanelAdmin() {
 
     document.getElementById('btn-tab-asistencia').addEventListener('click', () => iniciarPanelAdmin());
     
-    // Al hacer clic en Adm. Tienda, lanzamos el modal estilizado pidiendo la contraseña 2503
     document.getElementById('btn-tab-tienda-admin').addEventListener('click', () => {
         solicitarPasswordTienda();
     });
@@ -599,7 +594,6 @@ function iniciarPanelAdmin() {
     escanerContinuo.render(alEscanearModoGuardia, () => {});
 }
 
-// NUEVA FUNCIÓN: Modal estilizado para la clave de administración de tienda
 function solicitarPasswordTienda() {
     let modal = document.getElementById('modal-password-tienda');
     if (!modal) {
@@ -625,7 +619,6 @@ function solicitarPasswordTienda() {
     const inputPwd = document.getElementById('input-password-tienda');
     inputPwd.focus();
 
-    // Eventos de los botones del modal
     document.getElementById('btn-cancelar-pwd').addEventListener('click', () => {
         modal.style.display = 'none';
     });
@@ -680,7 +673,6 @@ async function confirmarPagoAdmin(referencia) {
         const params = new URLSearchParams({ tipo: 'confirmar_pago', referencia: referencia });
         await fetch(`${URL_APPS_SCRIPT}?${params.toString()}`, { method: 'GET', mode: 'no-cors' });
 
-        // Actualizar localmente
         const pedido = bdPedidosTienda.find(p => p.referencia === referencia);
         if (pedido) pedido.estado = 'Confirmado';
 
@@ -891,7 +883,7 @@ btnEscanear.addEventListener('click', () => {
                     <div id="menu-opciones" class="menu-opciones">
                         <button id="btn-ver-invitaciones" class="btn-invitaciones">📩 Invitaciones Escolares</button>
                         <button id="btn-plan-evaluacion" class="btn-plan">📋 Plan de Evaluación</button>
-                        <button id="btn-tienda-escolar" class="btn-plan" style="background: #059669; color: white;">🛒 Tienda Escolar</button>
+                        <button id="btn-tienda-escolar" class="btn-plan" style="background: #94a3b8; color: white; cursor: not-allowed; opacity: 0.8;" disabled>🛒 Tienda Escolar (Próximamente)</button>
                     </div>
 
                     <h3 style="margin: 10px 0 5px 0; font-size: 14px;">📊 Progreso Académico</h3>
@@ -911,7 +903,7 @@ btnEscanear.addEventListener('click', () => {
 
             document.getElementById('btn-ver-invitaciones').addEventListener('click', abrirModalInvitaciones);
             document.getElementById('btn-plan-evaluacion').addEventListener('click', () => { abrirModalPlanEvaluacion(estudiante.grado); });
-            document.getElementById('btn-tienda-escolar').addEventListener('click', () => { abrirModalTienda(estudiante); });
+            // document.getElementById('btn-tienda-escolar').addEventListener('click', () => { abrirModalTienda(estudiante); });
 
             document.getElementById('btn-salir').addEventListener('click', () => {
                 cerrarModalInvitaciones();
