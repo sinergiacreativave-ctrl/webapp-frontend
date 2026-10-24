@@ -15,7 +15,8 @@ const PIN_TIENDA = "2503";  // NUEVA Contraseña exclusiva para Administrar la T
 
 const fotosInvitaciones = [
     'fotos/evento1.jpg',
-    'fotos/evento2.jpg'
+    'fotos/evento2.jpg',
+    'fotos/evento3.jpg'
 ];
 
 let bdEstudiantes = []; 
